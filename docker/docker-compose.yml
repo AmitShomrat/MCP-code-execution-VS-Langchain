@@ -27,29 +27,16 @@ services:
     ports:
       - "8000:8000"
     
-    # Environment variables
-    # For production, use .env file or GCP Secret Manager
-    environment:
-      # OpenAI API Configuration
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
-      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-4096}
-      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.2}
-      
-      # Code Execution Configuration
-      - CODE_EXECUTION_TIMEOUT=${CODE_EXECUTION_TIMEOUT:-30}
-      
-      # MCP Configuration
-      - MCP_CONFIG_PATH=${MCP_CONFIG_PATH:-mcp_config.json}
-      
-      # Python Environment
-      - PYTHONUNBUFFERED=1
-      - PYTHONDONTWRITEBYTECODE=1
-    
-    # Environment file (alternative to above)
-    # Create .env file in project root with your variables
+    # Environment file
+    # All environment variables are loaded from .env in project root
+    # This includes: OPENAI_API_KEY, OPENAI_MODEL, APP_PORT, etc.
     env_file:
       - ../.env
+    
+    # Docker-specific environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
     
     # Volume mounts for development
     # Allows live code updates without rebuilding container
