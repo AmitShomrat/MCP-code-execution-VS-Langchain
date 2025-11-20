@@ -25,11 +25,22 @@ ENV PATH="/root/.local/bin:$PATH"
 ENV UV_SYSTEM_PYTHON=1
 
 # Copy dependency files first for better layer caching
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml ./
 
-# Install dependencies into a virtual environment
+# Install dependencies into a virtual environment for clean transfer
 RUN uv venv /opt/venv && \
-    uv sync --frozen && \
+    uv pip install --python /opt/venv/bin/python \
+        "fastapi>=0.121.2" \
+        "langchain>=0.3.0" \
+        "langchain-openai>=1.0.3" \
+        "mcp>=1.21.1" \
+        "openai>=2.8.0" \
+        "pandas>=2.3.3" \
+        "pydantic>=2.0.0" \
+        "python-dotenv>=1.2.1" \
+        "python-multipart>=0.0.9" \
+        "requests>=2.32.5" \
+        "uvicorn[standard]>=0.38.0" && \
     # Clean up to reduce size
     find /opt/venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /opt/venv -type f -name "*.pyc" -delete && \
