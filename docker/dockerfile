@@ -41,15 +41,15 @@ RUN apt-get update && apt-get install -y \
 # ============================================
 FROM base as dependencies
 
-# Copy only requirements file first (for Docker layer caching)
-# This ensures dependencies are only rebuilt when requirements change
-COPY requirements.txt .
+# Copy only pyproject.toml first (for Docker layer caching)
+# This ensures dependencies are only rebuilt when pyproject.toml changes
+COPY pyproject.toml .
 
 # Install Python dependencies
 # --no-cache-dir: Don't cache pip packages to reduce image size
 # --upgrade: Ensure latest compatible versions
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir .
 
 # ============================================
 # STAGE 3: Application Build
