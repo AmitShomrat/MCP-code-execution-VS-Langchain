@@ -1,0 +1,913 @@
+/**
+ * MCP Benchmark Dashboard Styles
+ * Clean, modern, and responsive design
+ */
+
+:root {
+    --primary-bg: #000000;
+    --secondary-bg: #0a0a0a;
+    --card-bg: #1a1a1a;
+    --traditional-color: #e94560;
+    --code-exec-color: #00ff88;
+    --text-primary: #eeeeee;
+    --text-secondary: #aaaaaa;
+    --success-color: #00d9ff;
+    --warning-color: #ffa600;
+    --border-color: #333333;
+    --hover-bg: #2a2a2a;
+}
+
+/* Light theme colors */
+[data-theme="light"] {
+    --primary-bg: #ffffff;
+    --secondary-bg: #f5f5f5;
+    --card-bg: #ffffff;
+    --traditional-color: #d63447;
+    --code-exec-color: #00b894;
+    --text-primary: #2d3436;
+    --text-secondary: #636e72;
+    --success-color: #0984e3;
+    --warning-color: #fdcb6e;
+    --border-color: #dfe6e9;
+    --hover-bg: #e8e8e8;
+}
+
+/* Smooth transition for theme changes */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.6;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--traditional-color), var(--code-exec-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.5px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    font-weight: 400;
+    animation: fadeInUp 1s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.query-section {
+    background: var(--card-bg);
+    padding: 30px 35px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    animation: slideInDown 0.6s ease;
+}
+
+.query-section:hover {
+    box-shadow: 0 10px 20px rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.query-section h2 {
+    margin-bottom: 18px;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+}
+
+#queryInput {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--secondary-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    height: 90px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#queryInput:focus {
+    outline: none;
+    border-color: var(--code-exec-color);
+    box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+    background: rgba(10, 10, 10, 0.8);
+}
+
+.button-group {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Button base styling with modern design */
+.btn {
+    padding: 12px 24px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+    transform-style: preserve-3d;
+}
+
+/* Shimmer effect that sweeps across button on hover */
+.btn > span {
+    position: relative;
+    z-index: 1;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Show shimmer on hover */
+.btn:hover::after {
+    opacity: 1;
+}
+
+/* Hover state with 3D lift and scale */
+.btn:hover {
+    transform: translateY(-3px) scale(1.02);
+}
+
+/* Active/pressed state */
+.btn:active {
+    transform: translateY(-1px) scale(0.98);
+    transition: all 0.1s ease;
+}
+
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Traditional MCP button - Subtle dark theme with red accent */
+.btn-traditional {
+    background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+    color: #ff4d6d;
+    border: 2px solid #ff4d6d;
+    animation: borderPulseTraditional 3s ease-in-out infinite;
+    position: relative;
+}
+
+/* Animated border gradient for Traditional button */
+.btn-traditional::before {
+    border-radius: 10px;
+    background: linear-gradient(45deg, #ff4d6d, #e94560, #ff6b9d, #ff4d6d);
+    background-size: 400% 400%;
+    animation: borderFlow 4s ease infinite;
+}
+
+/* Code Execution MCP button - Subtle dark theme with green accent */
+.btn-code-exec {
+    background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+    color: #00ff88;
+    border: 2px solid #00ff88;
+    animation: borderPulseCodeExec 3s ease-in-out infinite;
+    position: relative;
+}
+
+/* Animated border gradient for Code Execution button */
+.btn-code-exec::before {
+    border-radius: 10px;
+    background: linear-gradient(45deg, #00ff88, #00d9ff, #00cc6f, #00ff88);
+    background-size: 400% 400%;
+    animation: borderFlow 4s ease infinite;
+}
+
+/* Enhanced hover glow for Traditional MCP */
+.btn-traditional:hover {
+    background: linear-gradient(135deg, #2a1a1f, #1a0f13);
+    box-shadow: 0 8px 30px rgba(255, 77, 109, 0.4);
+    border-color: #ff6b9d;
+    color: #ff6b9d;
+}
+
+/* Enhanced hover glow for Code Execution MCP */
+.btn-code-exec:hover {
+    background: linear-gradient(135deg, #1a2a1f, #0f1a13);
+    box-shadow: 0 8px 30px rgba(0, 255, 136, 0.4);
+    border-color: #00d9ff;
+    color: #00d9ff;
+}
+
+/* Animated border flow effect */
+@keyframes borderFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Border pulse animation for Traditional button */
+@keyframes borderPulseTraditional {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(255, 77, 109, 0.2), inset 0 0 20px rgba(255, 77, 109, 0.05);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(255, 77, 109, 0.4), inset 0 0 30px rgba(255, 77, 109, 0.1);
+    }
+}
+
+/* Border pulse animation for Code Execution button */
+@keyframes borderPulseCodeExec {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.05);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4), inset 0 0 30px rgba(0, 255, 136, 0.1);
+    }
+}
+
+/* Button icon styling with floating animation */
+.btn-icon {
+    font-size: 1.2rem;
+    animation: iconFloat 2.5s ease-in-out infinite;
+    display: inline-block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Smooth floating animation for icons */
+@keyframes iconFloat {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-4px) rotate(-2deg);
+    }
+    75% {
+        transform: translateY(-2px) rotate(2deg);
+    }
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    min-width: auto;
+}
+
+.results-section {
+    margin-bottom: 30px;
+    display: none;
+    animation: zoomIn 0.6s ease;
+}
+
+.results-section.visible {
+    display: block;
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.results-section h2 {
+    margin-bottom: 25px;
+    margin-top: 10px;
+    font-size: 2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 20px;
+}
+
+/* Result cards - hidden by default, shown when executed */
+.result-card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    display: none;
+}
+
+/* Show card when it has data */
+.result-card.visible {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Winner card styling with green glow */
+.result-card.winner {
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3);
+    animation: winnerPulse 2s ease-in-out infinite;
+}
+
+/* Loser card styling (subtle) */
+.result-card.loser {
+    opacity: 0.85;
+}
+
+/* Winner badge container (compact, black-themed with animated glow) */
+.winner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+    color: #00ff88;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 2px solid #00ff88;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-left: auto;
+    animation: winnerGlow 2s ease infinite;
+}
+
+/* Trophy icon in winner badge */
+.trophy-icon {
+    font-size: 1.1rem;
+    animation: trophyBounce 1s ease infinite;
+}
+
+/* Winner text in badge */
+.winner-text {
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Improvement stats panel (displays below card title) */
+.improvement-stats {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 217, 255, 0.1));
+    border-left: 3px solid #00ff88;
+    padding: 12px 15px;
+    margin: 15px 0 10px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #00ff88;
+    border-radius: 5px;
+    animation: fadeIn 0.5s ease, statsGlow 2s ease infinite;
+}
+
+/* Winner badge glow animation */
+@keyframes winnerGlow {
+    0%, 100% {
+        border-color: #00ff88;
+        box-shadow: 0 0 10px #00ff88;
+    }
+    50% {
+        border-color: #00d9ff;
+        box-shadow: 0 0 20px #00d9ff;
+    }
+}
+
+/* Stats panel subtle glow animation */
+@keyframes statsGlow {
+    0%, 100% {
+        border-left-color: #00ff88;
+        box-shadow: -5px 0 15px rgba(0, 255, 136, 0.2);
+    }
+    50% {
+        border-left-color: #00d9ff;
+        box-shadow: -5px 0 20px rgba(0, 217, 255, 0.3);
+    }
+}
+
+/* Winner pulse animation */
+@keyframes winnerPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(0, 255, 136, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* Badge slide-in animation */
+@keyframes badgeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Trophy bounce animation */
+@keyframes trophyBounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.result-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.traditional-header {
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), transparent);
+    animation: headerGlow 2s ease infinite;
+}
+
+.code-exec-header {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), transparent);
+    animation: headerGlow 2s ease infinite;
+}
+
+@keyframes headerGlow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.card-header h3 {
+    font-size: 1.3rem;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--secondary-bg);
+}
+
+.status-badge.running {
+    background: var(--warning-color);
+    animation: pulse 1.5s infinite;
+}
+
+.status-badge.complete {
+    background: var(--success-color);
+    color: var(--primary-bg);
+}
+
+.status-badge.error {
+    background: var(--traditional-color);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.metric {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: all 0.3s ease;
+    animation: scaleIn 0.5s ease;
+}
+
+.metric:hover {
+    transform: scale(1.05);
+    background: rgba(15, 15, 15, 0.8);
+    box-shadow: 0 4px 8px rgba(0, 255, 136, 0.1);
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.metric-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.metric-value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--code-exec-color);
+    animation: numberPop 0.6s ease;
+}
+
+@keyframes numberPop {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.token-breakdown {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.token-breakdown h4 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.breakdown-item:last-child {
+    border-bottom: none;
+}
+
+.output-section {
+    margin-top: 20px;
+}
+
+.output-section h4 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.output-box {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--code-exec-color);
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.comparison-section {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    display: none;
+    animation: slideInUp 0.6s ease;
+    border: 1px solid var(--border-color);
+}
+
+.comparison-section.visible {
+    display: block;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
+    font-size: 2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Export button styling */
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--code-exec-color), var(--success-color));
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+}
+
+/* Export button hover effect */
+.export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.5);
+}
+
+/* Export button active effect */
+.export-btn:active {
+    transform: translateY(0);
+}
+
+/* Export icon */
+.export-icon {
+    font-size: 1.2rem;
+    animation: downloadBounce 2s ease-in-out infinite;
+}
+
+/* Download bounce animation for export icon */
+@keyframes downloadBounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.comparison-content {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.chart-container {
+    background: var(--secondary-bg);
+    padding: 20px;
+    border-radius: 8px;
+    min-height: 400px;
+}
+
+.table-container {
+    background: var(--secondary-bg);
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.table-container h3 {
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+/* Table styling like pandas DataFrame with grid borders */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333333;
+    background: var(--card-bg);
+}
+
+thead {
+    background: var(--secondary-bg);
+}
+
+/* Table header - pandas style with all borders */
+th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--secondary-bg);
+    border: 1px solid #333333;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Table cell - pandas style with all borders */
+td {
+    padding: 12px 15px;
+    border: 1px solid #333333;
+    color: var(--text-secondary);
+}
+
+/* Table row styling with transitions */
+/* Table row styling - pandas DataFrame style with alternating colors */
+tbody tr {
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+}
+
+tbody tr:nth-child(even) {
+    background: rgba(26, 26, 26, 0.5);
+}
+
+tbody tr:hover {
+    background: var(--hover-bg);
+    box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1);
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.summary-section {
+    background: var(--secondary-bg);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.summary-section h3 {
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+#summaryContent {
+    line-height: 1.8;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 9999;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--code-exec-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+

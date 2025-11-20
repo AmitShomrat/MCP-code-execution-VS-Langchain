@@ -1,0 +1,115 @@
+# ============================================
+# MCP Benchmark Dashboard - Dockerfile
+# ============================================
+# Multi-stage build for optimized image size
+# Suitable for Google Cloud Platform deployment
+
+# ============================================
+# STAGE 1: Base Python Image
+# ============================================
+FROM python:3.11-slim as base
+
+# Set working directory inside container
+WORKDIR /app
+
+# Set environment variables
+# Prevents Python from writing .pyc files to disk
+ENV PYTHONDONTWRITEBYTECODE=1
+# Prevents Python from buffering stdout and stderr
+ENV PYTHONUNBUFFERED=1
+# Set Python path to include application directory
+ENV PYTHONPATH=/app
+
+# Install system dependencies required for Python packages
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    libffi-dev \
+    libssl-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================================
+# STAGE 2: Dependencies Installation
+# ============================================
+FROM base as dependencies
+
+# Copy only requirements file first (for Docker layer caching)
+# This ensures dependencies are only rebuilt when requirements change
+COPY requirements.txt .
+
+# Install Python dependencies
+# --no-cache-dir: Don't cache pip packages to reduce image size
+# --upgrade: Ensure latest compatible versions
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# ============================================
+# STAGE 3: Application Build
+# ============================================
+FROM dependencies as application
+
+# Create necessary directories for application data and logs
+RUN mkdir -p /app/data /app/logs /app/static
+
+# Copy application code
+# Copy in order of least to most frequently changed for better caching
+COPY app/ /app/app/
+COPY servers/ /app/servers/
+COPY static/ /app/static/
+COPY main.py /app/
+COPY mcp_config.json /app/
+COPY .env.example /app/.env.example
+
+# Copy pyproject.toml if exists (for package metadata)
+COPY pyproject.toml /app/ 2>/dev/null || true
+
+# Create non-root user for security best practices
+# Running as non-root is recommended for GCP Cloud Run and Kubernetes
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port 8000 (FastAPI default port)
+# This port will be used by Cloud Run or GKE
+EXPOSE 8000
+
+# Health check to ensure container is running properly
+# GCP Cloud Run will use this to verify container health
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# ============================================
+# Container Startup Command
+# ============================================
+# Use Uvicorn as ASGI server for FastAPI
+# --host 0.0.0.0: Listen on all network interfaces (required for containers)
+# --port 8000: Port to run the application
+# --workers 1: Single worker (GCP Cloud Run manages scaling externally)
+# --log-level info: Set logging level
+CMD ["uvicorn", "app.api.routes:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--log-level", "info"]
+
+# ============================================
+# Build Instructions:
+# ============================================
+# Build the image:
+#   docker build -f docker/dockerfile -t mcp-benchmark-dashboard .
+#
+# Run locally:
+#   docker run -p 8000:8000 --env-file .env mcp-benchmark-dashboard
+#
+# Push to Google Container Registry (GCR):
+#   docker tag mcp-benchmark-dashboard gcr.io/YOUR_PROJECT_ID/mcp-benchmark-dashboard
+#   docker push gcr.io/YOUR_PROJECT_ID/mcp-benchmark-dashboard
+#
+# Deploy to Cloud Run:
+#   gcloud run deploy mcp-benchmark-dashboard \
+#     --image gcr.io/YOUR_PROJECT_ID/mcp-benchmark-dashboard \
+#     --platform managed \
+#     --region us-central1 \
+#     --allow-unauthenticated
+# ============================================
+

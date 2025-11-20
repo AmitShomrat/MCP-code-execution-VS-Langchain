@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\Prathmesh.Pawar\\OneDrive\\Desktop\\VS CODE ALL FILES\\AI_STUDIO_EXPLRED\\Code_Execution_MCP_17_Nov"
+      ],
+      "description": "Filesystem operations for project directory with real MCP server"
+    }
+  }
+}
+

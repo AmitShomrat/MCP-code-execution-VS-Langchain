@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Benchmark Comparison Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>MCP Benchmark Comparison Dashboard</h1>
+            <p class="subtitle">Compare Traditional MCP vs Code Execution MCP Performance</p>
+        </header>
+
+        <section class="query-section">
+            <h2>Enter Your Query</h2>
+            <textarea 
+                id="queryInput" 
+                placeholder="Example: Calculate total revenue in Sales_Records.csv"
+                rows="3"
+            ></textarea>
+            
+            <div class="button-group">
+                <button id="btnTraditional" class="btn btn-traditional">
+                    <span class="btn-icon">🔧</span>
+                    Traditional MCP
+                </button>
+                
+                <button id="btnCodeExecution" class="btn btn-code-exec">
+                    <span class="btn-icon">⚡</span>
+                    Code Execution MCP
+                </button>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <h2>Live Execution Results</h2>
+            
+            <div class="results-grid">
+                <div class="result-card" id="traditionalResult">
+                    <div class="card-header traditional-header">
+                        <h3>🔧 Traditional MCP</h3>
+                        <span class="status-badge" id="traditionalStatus">Ready</span>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="metrics">
+                            <div class="metric">
+                                <span class="metric-label">Time:</span>
+                                <span class="metric-value" id="traditionalTime">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">LLM Calls:</span>
+                                <span class="metric-value" id="traditionalCalls">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Total Tokens:</span>
+                                <span class="metric-value" id="traditionalTokens">--</span>
+                            </div>
+                        </div>
+                        
+                        <div class="token-breakdown" id="traditionalBreakdown">
+                            <h4>Token Breakdown</h4>
+                            <div class="breakdown-item">
+                                <span>Prompt:</span>
+                                <span id="traditionalPromptTokens">--</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Completion:</span>
+                                <span id="traditionalCompletionTokens">--</span>
+                            </div>
+                        </div>
+                        
+                        <div class="output-section">
+                            <h4>Output</h4>
+                            <div class="output-box" id="traditionalOutput">
+                                Waiting for execution...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-card" id="codeExecResult">
+                    <div class="card-header code-exec-header">
+                        <h3>⚡ Code Execution MCP</h3>
+                        <span class="status-badge" id="codeExecStatus">Ready</span>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="metrics">
+                            <div class="metric">
+                                <span class="metric-label">Time:</span>
+                                <span class="metric-value" id="codeExecTime">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">LLM Calls:</span>
+                                <span class="metric-value" id="codeExecCalls">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Total Tokens:</span>
+                                <span class="metric-value" id="codeExecTokens">--</span>
+                            </div>
+                        </div>
+                        
+                        <div class="token-breakdown" id="codeExecBreakdown">
+                            <h4>Token Breakdown</h4>
+                            <div class="breakdown-item">
+                                <span>Prompt:</span>
+                                <span id="codeExecPromptTokens">--</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Completion:</span>
+                                <span id="codeExecCompletionTokens">--</span>
+                            </div>
+                        </div>
+                        
+                        <div class="output-section">
+                            <h4>Output</h4>
+                            <div class="output-box" id="codeExecOutput">
+                                Waiting for execution...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="comparison-section" id="comparisonSection">
+            <div class="section-header">
+                <h2>📊 Current Query Comparison</h2>
+                <button id="exportBtn" class="export-btn" title="Export Results">
+                    <span class="export-icon">📥</span>
+                    <span class="export-text">Export Results</span>
+                </button>
+            </div>
+            
+            <div class="comparison-content">
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <h3>Results Comparison</h3>
+                    <table id="comparisonTable">
+                        <thead>
+                            <tr>
+                                <th>Query</th>
+                                <th>Approach</th>
+                                <th>Time (s)</th>
+                                <th>Tokens</th>
+                                <th>LLM Calls</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonTableBody">
+                            <tr>
+                                <td colspan="7" class="no-data">No benchmark data available. Run some benchmarks to see comparisons.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text" id="loadingText">Processing...</p>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/charts.js"></script>
+</body>
+</html>
+
