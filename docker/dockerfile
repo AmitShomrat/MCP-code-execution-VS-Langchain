@@ -104,6 +104,7 @@ set -e\n\
 \n\
 PORT="${APP_PORT:-8000}"\n\
 LOG="${LOG_LEVEL:-INFO}"\n\
+LOG_LOWER=$(echo "${LOG}" | tr "[:upper:]" "[:lower:]")\n\
 \n\
 echo "========================================"\n\
 echo "MCP Benchmark Dashboard"\n\
@@ -111,13 +112,13 @@ echo "========================================"\n\
 echo "Environment: ${ENV_NAME}"\n\
 echo "Version: ${APP_VERSION}"\n\
 echo "Port: ${PORT}"\n\
-echo "Log Level: ${LOG}"\n\
+echo "Log Level: ${LOG_LOWER}"\n\
 echo "========================================"\n\
 \n\
 exec uvicorn app.api.routes:app \\\n\
   --host 0.0.0.0 \\\n\
   --port "${PORT}" \\\n\
-  --log-level "${LOG}"\n' > /app/entrypoint.sh && \
+  --log-level "${LOG_LOWER}"\n' > /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh && \
     chown appuser:appuser /app/entrypoint.sh
 
