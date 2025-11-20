@@ -20,6 +20,12 @@ ENV PYTHONUNBUFFERED=1
 # Set Python path to include application directory
 ENV PYTHONPATH=/app
 
+# Application configuration (can be overridden by .env file)
+ENV APP_PORT=8000
+ENV ENV_NAME=prod
+ENV APP_VERSION=1.0.0
+ENV LOG_LEVEL=INFO
+
 # Install system dependencies required for Python packages
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -80,17 +86,17 @@ EXPOSE 8000
 # Health check to ensure container is running properly
 # GCP Cloud Run will use this to verify container health
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:${APP_PORT}/health || exit 1
 
 # ============================================
 # Container Startup Command
 # ============================================
 # Use Uvicorn as ASGI server for FastAPI
 # --host 0.0.0.0: Listen on all network interfaces (required for containers)
-# --port 8000: Port to run the application
+# --port $APP_PORT: Port to run the application (from environment variable)
 # --workers 1: Single worker (GCP Cloud Run manages scaling externally)
-# --log-level info: Set logging level
-CMD ["uvicorn", "app.api.routes:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--log-level", "info"]
+# --log-level $LOG_LEVEL: Set logging level (from environment variable)
+CMD sh -c "uvicorn app.api.routes:app --host 0.0.0.0 --port ${APP_PORT} --workers 1 --log-level ${LOG_LEVEL}"
 
 # ============================================
 # Build Instructions:
@@ -100,6 +106,9 @@ CMD ["uvicorn", "app.api.routes:app", "--host", "0.0.0.0", "--port", "8000", "--
 #
 # Run locally:
 #   docker run -p 8000:8000 --env-file .env mcp-benchmark-dashboard
+#
+# Run with custom port:
+#   docker run -p 3000:3000 --env-file .env -e APP_PORT=3000 mcp-benchmark-dashboard
 #
 # Push to Google Container Registry (GCR):
 #   docker tag mcp-benchmark-dashboard gcr.io/YOUR_PROJECT_ID/mcp-benchmark-dashboard
