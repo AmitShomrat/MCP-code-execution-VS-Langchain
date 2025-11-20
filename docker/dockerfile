@@ -29,8 +29,7 @@ COPY pyproject.toml uv.lock ./
 
 # Install dependencies into a virtual environment
 RUN uv venv /opt/venv && \
-    . /opt/venv/bin/activate && \
-    uv pip install -r pyproject.toml && \
+    uv sync --frozen && \
     # Clean up to reduce size
     find /opt/venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
     find /opt/venv -type f -name "*.pyc" -delete && \
