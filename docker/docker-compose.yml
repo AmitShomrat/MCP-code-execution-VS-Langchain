@@ -46,8 +46,8 @@ services:
       - ../static:/app/static:ro
       - ../main.py:/app/main.py:ro
       
-      # Mount data directory (persistent storage)
-      - ../data:/app/data
+      # Data stays inside container (no mount needed for production)
+      # - ../data:/app/data
       
       # Logs stay inside container (no mount needed)
       # Access with: docker-compose logs -f
