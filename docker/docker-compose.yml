@@ -49,8 +49,9 @@ services:
       # Mount data directory (persistent storage)
       - ../data:/app/data
       
-      # Mount logs directory
-      - ../logs:/app/logs
+      # Logs stay inside container (no mount needed)
+      # Access with: docker-compose logs -f
+      # - ../logs:/app/logs
       
       # Mount configuration files
       - ../mcp_config.json:/app/mcp_config.json:ro
