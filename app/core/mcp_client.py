@@ -289,13 +289,6 @@ class MCPClient:
         return self._catalog
         
 
-    async def close(self):
-        """Close all MCP server connections"""
-        await self.exit_stack.aclose()
-        self.sessions.clear()
-        self.initialized = False
-        logger.info("All MCP connections closed")
-
     def get_available_servers(self) -> List[str]:
         """Get list of all configured server names"""
         return list(self.server_configs.keys())
@@ -314,17 +307,18 @@ class MCPClient:
             # If any error checking session state, assume it's not connected
             return False
 
-
-
-# Generate tools descriptions here.
-
-
-
+    async def close(self):
+        """Close all MCP server connections"""
+        if not self.initialized:
+            return
+        await self.exit_stack.aclose()
+        self.sessions.clear()
+        self.initialized = False
+        logger.info("All MCP connections closed")
 
 
 # Global MCP client instance
 _mcp_client_instance = None
-
 
 def get_mcp_client(config_path: str = "mcp_config.json") -> MCPClient:
     """Get or create the global MCP client instance"""
