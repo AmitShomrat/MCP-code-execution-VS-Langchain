@@ -6,8 +6,8 @@ which includes both single-task and multi-task modes in one FastAPI application.
 """
 import sys
 import asyncio
-
-
+import uvicorn
+import os
 
 def print_banner():
     """Print welcome banner."""
@@ -15,7 +15,6 @@ def print_banner():
     print("MCP BENCHMARK SYSTEM")
     print("=" * 80)
     print()
-
 
 def print_menu():
     """Print menu options."""
@@ -29,7 +28,7 @@ def print_menu():
     print("     - API documentation at: http://localhost:8000/docs")
     print("     - MCP Gateway at: http://localhost:8080")
     print()
-    print("  2. 💻 Start MCP Benchmark Dashboard in Development Mode")
+    print("  2. 💻 Start MCP Benchmark Dashboard in Dev Mode (sandbox's interactive shell)")
     print("     - Unified web interface at: http://localhost:8000")
     print("     - API documentation at: http://localhost:8000/docs")
     print("     - MCP Gateway at: http://localhost:8080")
@@ -37,6 +36,59 @@ def print_menu():
     print("  3. ❌ Exit")
     print()
 
+def start_main_server():
+    """
+    Start the main FastAPI server (Dashboard).
+    
+    Configuration:
+    - Host: 0.0.0.0 (accessible from network)
+    - Port: 8000
+    - Reload: False (disabled for multiprocessing)
+    - Log level: info
+    """
+    uvicorn.run(
+        app="app.api.routes:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+        log_level="info"
+    )
+
+def start_gateway_server():
+    """
+    Start the MCP Gateway server.
+    
+    Configuration:
+    - Host: 0.0.0.0 (accessible from network)
+    - Port: 8085
+    - Reload: False (disabled for multiprocessing)
+    - Log level: info
+    """
+    uvicorn.run(
+        app="docker_code.mcp_gateway_server:app",
+        host="localhost",
+        port=8085,
+        reload=False,
+        log_level="info"
+    )
+
+async def serve(app, host, port):
+    config = uvicorn.Config(app, host=host, port=port, loop = "asyncio", lifespan="on", log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+async def launch(routes_port=8000, gateway_port=8080, dev_mode: bool = False):
+    from app.core import get_mcp_client
+    global _mcp_client
+    _mcp_client = await get_mcp_client()
+    try:
+        os.environ["DEV_MODE"] = str(dev_mode)
+        await asyncio.gather(
+            serve("app.api.routes:app", "0.0.0.0", routes_port),
+            serve("docker_code.mcp_gateway_server:app", "localhost", gateway_port)
+        )
+    finally:
+        await _mcp_client.close()
 
 def start_dashboard(dev_mode: bool = False):
     """Start the unified FastAPI Dashboard (Main + Gateway with single/multiple task modes)."""
@@ -55,14 +107,17 @@ def start_dashboard(dev_mode: bool = False):
     
     # Import and run the existing main.py logic (already uses shared MCP client)
     try:
-        import main
-        asyncio.run(main.main(dev_mode=dev_mode))
+        asyncio.run(launch(dev_mode=dev_mode))
     except KeyboardInterrupt:
         print("\n\nDashboard stopped")
 
-
 def main():
     """Main launcher function."""
+    # Set MCP server choice at launch.
+    from app.config.settings import server_selection
+
+    os.environ["SERVER_CHOICE"] = server_selection()
+
     while True:
         print_banner()
         print_menu()
@@ -91,7 +146,6 @@ def main():
         except Exception as e:
             print(f"\n❌ Error: {str(e)}\n")
             input("Press Enter to continue...")
-
 
 if __name__ == "__main__":
     main()
