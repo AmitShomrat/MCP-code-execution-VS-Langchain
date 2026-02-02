@@ -195,7 +195,7 @@ This server provides database operations. **Always inspect the schema before que
 > All examples use the **ChatGPT 4o mini** model.
 
 ![Threat phases diagram](./docs/images/uml-threat-phases-diagram.png)
-*Figure 3: Five-phase threat taxonomy*
+*Figure 4: Five-phase threat taxonomy*
 
 ---
 
@@ -415,17 +415,6 @@ Threats that corrupt agent state, decisions, or authorization logic without dire
 | **P2** | Code generation hijacking | P2.1: Output poisoning, P2.2: Exception injection | Unauthorized user creation, access grants |
 | **P3** | Code-flow / execution sink manipulation | P3.1: Inverse query, P3.2: Wrong passkey | Wrong data returned, wrong user's permissions |
 | **P4** | Semantic poisoning of decision state | P4.1: Fictional records in query results | Bypassed authorization logic |
-
----
-
-## Placeholder Index for UML Diagrams
-
-| # | Placeholder Location | Suggested Diagram Type |
-|---|----------------------|-------------------------|
-| 1 | [General Architecture](#general-architecture) | Component/Deployment diagram |
-| 2 | [Threat Modeling Assumptions](#threat-modeling-assumptions) | Trust boundary / Attack surface diagram |
-| 3 | [Sample Tasks & Benchmarks](#sample-tasks--benchmarks) | Activity / Sequence diagram |
-| 4 | [Empirical Threats Evaluation](#empirical-threats-evaluation) | Four-phase threat taxonomy / Flow diagram |
 
 ---
 
