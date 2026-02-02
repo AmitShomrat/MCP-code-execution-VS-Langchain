@@ -44,10 +44,10 @@ class TraditionalMCPBenchmark:
         - LLM call tracking
         """
         # Get singleton MCP client instance for filesystem operations
-        self.mcp_client = get_mcp_client()
+        self._mcp_client = get_mcp_client()
         
         # Initialize token usage tracking dictionary
-        self.total_tokens = {"input": 0, "output": 0, "total": 0}
+        self.total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         
         # Initialize LLM call counters
         self.llm_calls = 0
@@ -55,7 +55,6 @@ class TraditionalMCPBenchmark:
 
         # mcp_tools
         self.mcp_tools = [mcp_call]
-        # self.mcp_tools = [list_directory_decorated, inspect_csv_decorated, read_file_decorated, write_file_decorated]
         
     async def initialize_async(self):
         """
@@ -65,9 +64,9 @@ class TraditionalMCPBenchmark:
         that provides file system tools.
         """
         # Initialize MCP client and connect to filesystem server
-        await self.mcp_client.initialize()
-        self.mcp_tool_catalog = self.mcp_client.get_catalog()
-        logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
+        await self._mcp_client.initialize()
+        self.mcp_tool_catalog = self._mcp_client.get_catalog()
+        # logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
 
         
     async def run_benchmark_async(self, query: str) -> Dict[str, Any]:
@@ -93,7 +92,7 @@ class TraditionalMCPBenchmark:
                 - tokens: Token usage information
         """
         # Reset token tracking for new benchmark run
-        self.total_tokens = {"input": 0, "output": 0, "total": 0}
+        self.total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         
         # Reset LLM call counters for new benchmark run
         self.llm_calls = 0
@@ -147,9 +146,9 @@ class TraditionalMCPBenchmark:
                                 total_tokens = token_usage.get('total_tokens', 0)
                                 
                                 # Accumulate token counts
-                                self.total_tokens["input"] += prompt_tokens
-                                self.total_tokens["output"] += completion_tokens
-                                self.total_tokens["total"] += total_tokens
+                                self.total_tokens["prompt_tokens"] += prompt_tokens
+                                self.total_tokens["completion_tokens"] += completion_tokens
+                                self.total_tokens["total_tokens"] += total_tokens
                                 
                                 # Append LLM call details to list
                                 self.llm_calls_list.append({
@@ -199,9 +198,9 @@ class TraditionalMCPBenchmark:
             # Log token usage summary
             logger.info(f"\n{'=' * 80}\nTOKEN USAGE SUMMARY\n{'=' * 80}")
             logger.info(f"\n{'-' * 80}\nTOTAL TOKENS CONSUMED\n{'-' * 80}")
-            logger.info(f"Total Input Tokens: {self.total_tokens['input']}")
-            logger.info(f"Total Output Tokens: {self.total_tokens['output']}")
-            logger.info(f"Total Tokens: {self.total_tokens['total']}")
+            logger.info(f"Total Input Tokens: {self.total_tokens['prompt_tokens']}")
+            logger.info(f"Total Output Tokens: {self.total_tokens['completion_tokens']}")
+            logger.info(f"Total Tokens: {self.total_tokens['total_tokens']}")
             logger.info(f"{'=' * 80}\n")
             
             # Return successful benchmark result
@@ -254,4 +253,8 @@ class TraditionalMCPBenchmark:
             """
 
 
-
+    async def cleanup_async(self):
+        """
+        Cleanup MCP connections.
+        """
+        await self._mcp_client.close()
