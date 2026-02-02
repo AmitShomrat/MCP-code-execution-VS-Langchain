@@ -43,4 +43,3 @@ async def list_directory(path: str) -> list:
     items = [line.strip() for line in content.split('\n') if line.strip()]
     
     return items
-
