@@ -196,8 +196,6 @@ class RealMCPOrchestrator:
                 "error": "Max turns reached without completion"
             }
         
-        
-        
         # Calculate total execution time
         total_time = time.time() - total_start
         

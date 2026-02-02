@@ -4,7 +4,7 @@ Uses official MCP protocol to discover and interact with MCP servers
 """
 import json
 from typing import List, Dict, Optional, Any
-
+from abc import ABC, abstractmethod
 from openai import OpenAI
 
 from app.app_logging.logger import setup_logger
@@ -20,15 +20,28 @@ from app.config import (
 # Setup logger
 logger = setup_logger(__name__)
 
-
-class OpenAICodeAgent:
-    """Agent that discovers MCP tools from real MCP servers and generates Python code using OpenAI"""
-
-    def __init__(self, api_key: Optional[str] = None):
-        # Initialize OpenAI client for code generation
+class Agent(ABC):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.client = OpenAI(api_key=api_key or OPENAI_API_KEY)
-        self.model = OPENAI_MODEL
+        self.model = model or OPENAI_MODEL
         self.max_tokens = OPENAI_MAX_TOKENS
+    
+    @classmethod
+    def llm_call(self, messages: List[Dict[str, str]]) -> Dict[str, str]:
+        try:
+            return self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=self.max_tokens,
+                temperature=OPENAI_TEMPERATURE
+            )
+        except Exception as e:
+            logger.error(f"Error calling LLM: {e}")
+            raise e
+
+
+class OpenAICodeAgent(Agent):
+    """Agent that discovers MCP tools from real MCP servers and generates Python code using OpenAI"""
 
     async def generate_code_with_history(
         self, 
@@ -67,13 +80,12 @@ class OpenAICodeAgent:
 
         # Read openAI docs Response and try to bind and provide the tools def's for the agent.
         # Call OpenAI API with JSON mode to ensure structured response
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=openai_messages,
-            response_format={"type": "json_object"},
-            max_tokens=self.max_tokens,
-            temperature=OPENAI_TEMPERATURE
-        )
+        response = None
+        try:
+            response = self.llm_call(openai_messages)
+        except Exception as e:
+            logger.error(f"Error calling LLM: {e}")
+            raise e
         
         # Parse JSON response from LLM
         raw_response = response.choices[0].message.content
@@ -132,13 +144,9 @@ class OpenAICodeAgent:
             },
             {
                 "role": "user",
-                "content": f"""Original User Query:
-{user_query}
-
-Code Execution Results:
-{results_text}
-
-Please provide a clean, well-formatted final answer to the user's query based on the execution results above."""
+                "content": f"""Original User Query:\n {user_query} \n\n 
+                Code Execution Results:\n {results_text}
+                \n \nPlease provide a clean, well-formatted final answer to the user's query based on the execution results above."""
             }
         ]
         
@@ -147,12 +155,12 @@ Please provide a clean, well-formatted final answer to the user's query based on
         logger.info(f"Analyzing {len(execution_results)} execution results\n")
         
         # Call OpenAI API (no JSON mode - we want natural text)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=self.max_tokens,
-            temperature=OPENAI_TEMPERATURE
-        )
+        response = None
+        try:
+            response = self.llm_call(messages)
+        except Exception as e:
+            logger.error(f"Error calling LLM: {e}")
+            raise e
         
         # Get the final answer
         final_answer = response.choices[0].message.content
@@ -172,3 +180,7 @@ Please provide a clean, well-formatted final answer to the user's query based on
             "answer": final_answer,
             "token_usage": token_usage
         }
+
+
+class OpenAIJudge(Agent):
+    pass
