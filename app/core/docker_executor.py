@@ -62,7 +62,7 @@ class DockerCodeExecutor:
             logger.info("Waiting for READY signal from container...")
             ready_line = await asyncio.wait_for(
                 self.process.stderr.readline(),  
-                timeout=10
+                timeout=20
             )
             
             logger.info(f"Received from stderr: {ready_line}")
@@ -133,14 +133,15 @@ class DockerCodeExecutor:
         logger.info(f"Code length: {len(code)} bytes")
         
         # Ensure container is running
-        if not self.is_ready:
+        if not self.is_ready or self.process is None:
             logger.info("Container not ready, starting...")
             await self.start_container()
         
-        # Check if container died
-        if self.process.returncode is not None:
-            logger.warning(f"Container died with return code {self.process.returncode}, restarting...")
+        # Check if container died or transport closed
+        if self.process.returncode is not None or self.process.stdin.is_closing():
+            logger.warning(f"Container died (returncode={self.process.returncode}, stdin_closing={self.process.stdin.is_closing()}), restarting...")
             self.is_ready = False
+            self.process = None
             await self.start_container()
         
         try:
@@ -149,9 +150,23 @@ class DockerCodeExecutor:
             length_bytes = len(code_bytes).to_bytes(4, 'big') # int converted to exact 4 bytes
             
             logger.info(f"Sending {len(code_bytes)} bytes of code to container")
-            self.process.stdin.write(length_bytes)
-            self.process.stdin.write(code_bytes)
-            await self.process.stdin.drain()
+            
+            try:
+                self.process.stdin.write(length_bytes)
+                self.process.stdin.write(code_bytes)
+                await self.process.stdin.drain()
+            except (RuntimeError, OSError, BrokenPipeError) as transport_error:
+                # Transport is closed, restart container and retry
+                logger.warning(f"Transport error: {transport_error}, restarting container...")
+                self.is_ready = False
+                self.process = None
+                await self.start_container()
+                
+                # Retry sending code
+                self.process.stdin.write(length_bytes)
+                self.process.stdin.write(code_bytes)
+                await self.process.stdin.drain()
+            
             logger.info("Code sent, waiting for response...")
             
             # Read result with timeout
@@ -201,14 +216,6 @@ class DockerCodeExecutor:
     async def cleanup(self):
         """Cleanup resources"""
         await self.stop_container()
-    
-    def __del__(self):
-        """Ensure container is stopped"""
-        if self.process is not None:
-            try:
-                self.process.kill()
-            except:
-                pass
 
 docker_executor_instance = None
 
