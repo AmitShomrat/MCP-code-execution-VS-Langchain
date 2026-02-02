@@ -19,7 +19,7 @@ from langchain.tools import tool
 from app.app_logging.logger import setup_logger
 from app.core.mcp_client import get_mcp_client
 from app.config import OPENAI_MODEL
-from servers.filesystem import list_directory, inspect_csv, read_file, write_file
+from servers.filesystem import list_directory_decorated, inspect_csv_decorated, read_file_decorated, write_file_decorated
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
@@ -55,7 +55,7 @@ class TraditionalMCPBenchmark:
         self.llm_calls_list = []
 
         # mcp_tools
-        self.mcp_tools = [list_directory, inspect_csv, read_file, write_file]
+        self.mcp_tools = [list_directory_decorated, inspect_csv_decorated, read_file_decorated, write_file_decorated]
         
     async def initialize_async(self):
         """

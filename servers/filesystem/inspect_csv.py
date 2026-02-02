@@ -10,6 +10,7 @@ from io import StringIO
 from langchain.tools import tool
 
 
+# Core function - can be called directly as a regular async function
 async def inspect_csv(path: str) -> str:
     """
     Inspect CSV file structure using pandas.
@@ -78,3 +79,26 @@ async def inspect_csv(path: str) -> str:
     
     return '\n'.join(output)
 
+
+# LangChain tool version - for use with agents
+@tool
+async def inspect_csv_decorated(path: str) -> str:
+    """
+    Inspect CSV file structure using pandas.
+    
+    Returns:
+    - Top 5 rows
+    - Column datatypes
+    - Distinct count for object/string columns
+    
+    Args:
+        path: Path to CSV file (e.g., "Sales_Records.csv")
+        
+    Returns:
+        Formatted analysis string with structure and top 5 rows
+        
+    Example:
+        structure = await inspect_csv("Sales_Records.csv")
+        print(structure)
+    """
+    return await inspect_csv(path)
