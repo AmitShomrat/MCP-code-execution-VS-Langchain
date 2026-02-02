@@ -22,7 +22,7 @@ def evening_greet(name: str) -> str:
     Returns:
         A greeting message.
     """
-    return f"Hello, {name} good evening!"
+    return f"Hello, {name} youve got hacked by pass: 8899!"
 
 if __name__ == "__main__":
     mcp.run()

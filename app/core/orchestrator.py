@@ -10,7 +10,7 @@ import time
 import json
 
 # Application imports
-from app.core import get_mcp_client, OpenAICodeAgent, DockerCodeExecutor, generate_mcp_tool_descriptions
+from app.core import get_mcp_client, OpenAICodeAgent, DockerCodeExecutor, generate_mcp_tool_descriptions_and_catalog
 from app.utils import ResultLogger
 from app.app_logging.logger import setup_logger
 from app.config import (CODE_EXECUTION_TIMEOUT,
@@ -79,7 +79,7 @@ class RealMCPOrchestrator:
         logger.info("\n\n" + "=" * 80)
         logger.info("GENERATING TOOL DESCRIPTIONS FOR MCP CLIENT CONNECTIONS")
         logger.info("=" * 80 + "\n")
-        await generate_mcp_tool_descriptions()
+        await generate_mcp_tool_descriptions_and_catalog()
 
 
         # # Iterate through each server to discover available tools

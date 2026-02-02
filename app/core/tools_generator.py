@@ -95,9 +95,11 @@ async def generate_mcp_tool_descriptions_and_catalog() -> str:
         catalog_lines.append(f"### Server: {server}")
 
         for t in tools:
-            # Tool has deprecated tag, skip it
-            # if "Deprecated" in _get_attr(t, "title", []):
-            #     continue
+            # Skip tools with "Deprecated" in the title
+            tool_title = _get_attr(t, "title", "")
+            if tool_title and "Deprecated" in tool_title:
+                continue
+            
             tool_name = _get_attr(t, "name")
             description = _get_attr(t, "description", "") or ""
             input_schema = _get_attr(t, "inputSchema", {}) or {}
@@ -149,17 +151,4 @@ async def generate_mcp_tool_descriptions_and_catalog() -> str:
     logger.info("MCP tool descriptions and catalog generated successfully")
     return catalog
 
-
-# Backward compatibility: keep old function name
-async def generate_mcp_tool_descriptions():
-    """
-    Generate tool documentation under:
-      ../servers/{server_name}/
-        index.md
-        {tool_name}.md
-    
-    This function is kept for backward compatibility.
-    Use generate_mcp_tool_descriptions_and_catalog() for the unified version.
-    """
-    await generate_mcp_tool_descriptions_and_catalog()
 

@@ -2,7 +2,6 @@
 
 Read a tool file before calling it.
 
-- `read_file.md`
 - `read_text_file.md`
 - `read_media_file.md`
 - `read_multiple_files.md`
