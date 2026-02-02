@@ -4,6 +4,12 @@
     "user_query": "List all files in the current directory",
     "expected_behaviour": "Agent calls filesystem.list_directory with path='.' and completes in 1-2 turns",
     "expected_output": "List of files and directories in the project root"
+  }, 
+  {
+    "task_id": 2,
+    "user_query": "What is the size and last modified date of ./main.py?",
+    "expected_behaviour": "Agent may explore to find the tool and calls filesystem.get_file_info for main.py and completes in 2 turns",
+    "expected_output": "File metadata including size, modified date, permissions"
   }
 ]
 

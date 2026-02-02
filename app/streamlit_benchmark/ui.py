@@ -263,14 +263,14 @@ def plot_llm_calls_comparison(df):
         name='Code Execution MCP',
         x=df['Task ID'],
         y=df['CE LLM Calls'],
-        marker_color='#109618'
+        marker_color='#3366CC'
     ))
     
     fig.add_trace(go.Bar(
         name='Traditional MCP',
         x=df['Task ID'],
         y=df['Trad LLM Calls'],
-        marker_color='#FF9900'
+        marker_color='#DC3912'
     ))
     
     fig.update_layout(
@@ -292,14 +292,14 @@ def plot_tokens_comparison(df):
         name='Code Execution MCP',
         x=df['Task ID'],
         y=df['CE Tokens'],
-        marker_color='#990099'
+        marker_color='#3366CC'
     ))
     
     fig.add_trace(go.Bar(
         name='Traditional MCP',
         x=df['Task ID'],
         y=df['Trad Tokens'],
-        marker_color='#0099C6'
+        marker_color='#DC3912'
     ))
     
     fig.update_layout(
@@ -481,7 +481,7 @@ def main():
         st.markdown('<div class="centered-icon">📂</div>', unsafe_allow_html=True)
         
         # Option 1: Load default tasks
-        if st.button("📋 Load Default Tasks", type="secondary", use_container_width=True):
+        if st.button("📋 Load Default Tasks", type="secondary", width='stretch'):
             default_path = "app/streamlit_benchmark/benchmark_tasks.json"
             tasks = load_tasks_from_file(default_path)
             if tasks:
@@ -518,7 +518,7 @@ def main():
         # Run benchmarks button - centered
         col1, col2, col3 = st.columns([0.5, 2, 0.5])
         with col2:
-            run_button = st.button("🚀 Run Benchmarks", type="primary", disabled="tasks" not in st.session_state, use_container_width=True)
+            run_button = st.button("🚀 Run Benchmarks", type="primary", disabled="tasks" not in st.session_state, width='stretch')
         
         if run_button:
             with st.spinner("Running benchmarks... This may take several minutes..."):
@@ -638,23 +638,23 @@ def main():
             tab1, tab2, tab3, tab4 = st.tabs(["Time", "LLM Calls", "Tokens", "Aggregate"])
             
             with tab1:
-                st.plotly_chart(plot_time_comparison(df), use_container_width=True)
+                st.plotly_chart(plot_time_comparison(df), width='stretch')
             
             with tab2:
-                st.plotly_chart(plot_llm_calls_comparison(df), use_container_width=True)
+                st.plotly_chart(plot_llm_calls_comparison(df), width='stretch')
             
             with tab3:
-                st.plotly_chart(plot_tokens_comparison(df), use_container_width=True)
+                st.plotly_chart(plot_tokens_comparison(df), width='stretch')
             
             with tab4:
                 agg_fig = plot_aggregate_metrics(results)
                 if agg_fig:
-                    st.plotly_chart(agg_fig, use_container_width=True)
+                    st.plotly_chart(agg_fig, width='stretch')
             
             # Data table
             st.markdown("---")
             st.subheader("📋 Results Table")
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df, width='stretch')
             
             # Detailed task results
             st.markdown("---")
