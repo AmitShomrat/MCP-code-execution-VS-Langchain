@@ -1833,7 +1833,7 @@ function displayDetailedResults(results) {
                     <span class="result-metric-value highlight-red">${result.comparison?.traditional_total_tokens || 0}</span>
                 </div>
                 <div class="result-metric" data-approach="code_execution">
-                    <span class="result-metric-label">⚡ Code Exec Calls</span>
+                    <span class="result-metric-label">⚡ Code Exec LLM Calls</span>
                     <span class="result-metric-value">${result.comparison?.code_exec_llm_calls || 0}</span>
                 </div>
                 <div class="result-metric" data-approach="traditional">
