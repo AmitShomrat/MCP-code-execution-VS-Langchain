@@ -1,181 +1,53 @@
 [
   {
-    "timestamp": "2025-12-23T14:05:55.871827",
-    "query": "use list directory tool and give the results of path '.'",
-    "result": {
-      "success": false,
-      "error": "mcp_call requires name='<server>.<tool>'",
-      "output": "",
-      "time": 1.9925258159637451,
-      "llm_calls": [],
-      "tokens": {
-        "input": 0,
-        "output": 0,
-        "total": 0
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:10:22.115432",
-    "query": "use list directory tool and give the results of path '.'",
-    "result": {
-      "success": false,
-      "error": "mcp_call requires name='<server>.<tool>' (e.g. 'filesystem.list_directory'). Got name=None. Full payload keys=[]",
-      "output": "",
-      "time": 2.657912015914917,
-      "llm_calls": [],
-      "tokens": {
-        "input": 0,
-        "output": 0,
-        "total": 0
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:10:34.387836",
-    "query": "use list directory tool and give the results of path '.'",
-    "result": {
-      "success": false,
-      "error": "mcp_call requires name='<server>.<tool>' (e.g. 'filesystem.list_directory'). Got name=None. Full payload keys=[]",
-      "output": "",
-      "time": 1.153731107711792,
-      "llm_calls": [],
-      "tokens": {
-        "input": 0,
-        "output": 0,
-        "total": 0
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:13:23.465231",
-    "query": "How would you call tool? (say list_directory)",
+    "timestamp": "2025-12-24T12:01:18.402026",
+    "query": "list the current directory",
     "result": {
       "success": true,
-      "output": "To call the `list_directory` tool, you would use the `mcp_call` function with the appropriate parameters. Here's an example of how you would structure that call:\n\n```python\nfunctions.mcp_call(name=\"filesystem.list_directory\", args={\"path\": \"your_directory_path\"})\n```\n\nMake sure to replace `\"your_directory_path\"` with the actual path you want to list.",
-      "time": 2.3922808170318604,
+      "output": "The current directory contains the following items:\n\n### Files:\n- `.dockerignore`\n- `.env`\n- `.gitignore`\n- `.python-version`\n- `README.md`\n- `Sales_Records.csv`\n- `main.py`\n- `mcp_config.json`\n- `my_tests.py`\n- `pyproject.toml`\n- `tools_bridge.py`\n- `uv.lock`\n\n### Directories:\n- `.git`\n- `.venv`\n- `app`\n- `data`\n- `docker`\n- `docker_code`\n- `logs`\n- `servers`\n- `static`",
+      "time": 8.081730842590332,
       "llm_calls": [
         {
           "call_number": 1,
-          "latency": 2.39,
+          "latency": 2.02,
           "tokens": {
-            "prompt_tokens": 186,
-            "completion_tokens": 78,
-            "total_tokens": 264
-          }
-        }
-      ],
-      "tokens": {
-        "input": 186,
-        "output": 78,
-        "total": 264
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:14:49.363282",
-    "query": "perform that with '.'",
-    "result": {
-      "success": true,
-      "output": "It seems like your request might be incomplete or unclear. Could you please provide more details about what you would like me to perform or assist you with?",
-      "time": 1.3661737442016602,
-      "llm_calls": [
-        {
-          "call_number": 1,
-          "latency": 1.37,
-          "tokens": {
-            "prompt_tokens": 179,
-            "completion_tokens": 31,
-            "total_tokens": 210
-          }
-        }
-      ],
-      "tokens": {
-        "input": 179,
-        "output": 31,
-        "total": 210
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:15:42.002169",
-    "query": "call the tool filesystem.list_directory with arg \"path\": '.'",
-    "result": {
-      "success": false,
-      "error": "mcp_call requires name='<server>.<tool>' (e.g. 'filesystem.list_directory'). Got name=None. Full payload keys=[]",
-      "output": "",
-      "time": 1.6322970390319824,
-      "llm_calls": [],
-      "tokens": {
-        "input": 0,
-        "output": 0,
-        "total": 0
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:33:20.661624",
-    "query": "call the tool filesystem.list_directory with arg \"path\": '.'",
-    "result": {
-      "success": false,
-      "error": "mcp_call requires name='<server>.<tool>' (e.g. 'filesystem.list_directory'). Got name=None. Full payload keys=[]",
-      "output": "",
-      "time": 1.9619646072387695,
-      "llm_calls": [],
-      "tokens": {
-        "input": 0,
-        "output": 0,
-        "total": 0
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:38:52.817556",
-    "query": "call the tool filesystem.list_directory with arg \"path\": '.'",
-    "result": {
-      "success": false,
-      "error": "mcp_call() missing 1 required positional argument: 'args'",
-      "output": "",
-      "time": 2.3030829429626465,
-      "llm_calls": [],
-      "tokens": {
-        "input": 0,
-        "output": 0,
-        "total": 0
-      }
-    }
-  },
-  {
-    "timestamp": "2025-12-23T14:49:17.054460",
-    "query": "call the tool filesystem.list_directory with arg \"path\": '.'",
-    "result": {
-      "success": true,
-      "output": "The contents of the current directory (denoted by `.`) are as follows:\n\n- **Files:**\n  - `.dockerignore`\n  - `.env`\n  - `.gitignore`\n  - `.python-version`\n  - `README.md`\n  - `Sales_Records.csv`\n  - `main.py`\n  - `mcp_config.json`\n  - `my_tests.py`\n  - `pyproject.toml`\n  - `tools_bridge.py`\n  - `uv.lock`\n\n- **Directories:**\n  - `.git`\n  - `.venv`\n  - `app`\n  - `data`\n  - `docker`\n  - `docker_code`\n  - `logs`\n  - `servers`\n  - `static`",
-      "time": 5.620463848114014,
-      "llm_calls": [
-        {
-          "call_number": 1,
-          "latency": 2.81,
-          "tokens": {
-            "prompt_tokens": 185,
-            "completion_tokens": 23,
-            "total_tokens": 208
+            "prompt_tokens": 177,
+            "completion_tokens": 17,
+            "total_tokens": 194
           }
         },
         {
           "call_number": 2,
-          "latency": 2.81,
+          "latency": 2.02,
           "tokens": {
-            "prompt_tokens": 348,
-            "completion_tokens": 154,
-            "total_tokens": 502
+            "prompt_tokens": 237,
+            "completion_tokens": 21,
+            "total_tokens": 258
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 2.02,
+          "tokens": {
+            "prompt_tokens": 331,
+            "completion_tokens": 23,
+            "total_tokens": 354
+          }
+        },
+        {
+          "call_number": 4,
+          "latency": 2.02,
+          "tokens": {
+            "prompt_tokens": 494,
+            "completion_tokens": 121,
+            "total_tokens": 615
           }
         }
       ],
       "tokens": {
-        "input": 533,
-        "output": 177,
-        "total": 710
+        "input": 1239,
+        "output": 182,
+        "total": 1421
       }
     }
   }

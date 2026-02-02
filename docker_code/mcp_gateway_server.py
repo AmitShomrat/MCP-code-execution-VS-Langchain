@@ -1,0 +1,94 @@
+import os, sys
+from typing import Any, Dict, Optional, List
+import asyncio
+from fastapi import FastAPI, HTTPException, Header
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
+
+# Add project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from app.core.mcp_client import get_mcp_client
+
+
+class CallReq(BaseModel):
+    name: str                 # "<server>.<tool>"
+    args: Dict[str, Any] = {}
+    timeout_s: int = 30
+
+class CallResp(BaseModel):
+    ok: bool
+    result: Optional[Any] = None
+    content_text: Optional[str] = None
+    error: Optional[str] = None
+
+def extract_text(result: Any) -> Optional[str]:
+    content = getattr(result, "content", None)
+    if not content:
+        return None
+    texts = [getattr(c, "text", "") for c in content if getattr(c, "text", None)]
+    return "\n".join(texts) if texts else None
+
+# @app.lifespan("startup")
+# async def startup():
+#     mcp = get_mcp_client()
+#     await mcp.initialize()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting MCP gateway server")
+    mcp = get_mcp_client()
+    await mcp.initialize()
+    yield
+
+app = FastAPI(title="MCP Gateway", version="1.0.0", lifespan=lifespan)
+
+@app.get("/mcp/tools")
+async def tools():
+    mcp = get_mcp_client()
+    await mcp.initialize()
+
+    out: List[Dict[str, Any]] = []
+    for server in mcp.get_available_servers():
+        if not mcp.is_server_connected(server):
+            print(f"Server {server} is not connected")
+            continue
+        tools = await mcp.list_tools(server)
+        for t in tools:
+            # tool objects vary; use getattr safely
+            name = getattr(t, "name", None) or (t.get("name") if isinstance(t, dict) else None)
+            desc = getattr(t, "description", None) or (t.get("description") if isinstance(t, dict) else None)
+            schema = getattr(t, "inputSchema", None) or (t.get("inputSchema") if isinstance(t, dict) else None)
+            out.append({
+                "name": f"{server}.{name}",
+                "description": desc or "",
+                "inputSchema": schema or {},
+            })
+    return {"tools": out}
+
+@app.post("/mcp/call", response_model=CallResp)
+async def call_tool(req: CallReq, x_sandbox_token: Optional[str] = Header(default=None)):
+    # Optional: simple shared-secret check for container -> host
+    # if x_sandbox_token != os.environ.get("SANDBOX_TOKEN"):
+    #     raise HTTPException(status_code=401, detail="bad token")
+
+    if "." not in req.name:
+        raise HTTPException(status_code=400, detail="name must be '<server>.<tool>'")
+
+    server, tool = req.name.split(".", 1)
+
+    mcp = get_mcp_client()
+    await mcp.initialize()
+
+    async def _call():
+        return await mcp.call_tool(server_name=server, tool_name=tool, arguments=req.args)
+
+    try:
+        result = await asyncio.wait_for(_call(), timeout=req.timeout_s)
+        return CallResp(ok=True, result=None, content_text=extract_text(result))
+    except asyncio.TimeoutError:
+        return CallResp(ok=False, error=f"timeout after {req.timeout_s}s")
+    except Exception as e:
+        return CallResp(ok=False, error=str(e))

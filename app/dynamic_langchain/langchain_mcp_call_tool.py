@@ -3,6 +3,9 @@ from typing import Any, Dict
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 from app.core.mcp_client import get_mcp_client
+from app.app_logging.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class MCPCallInput(BaseModel):
     name: str = Field(..., description="The fully-qualified name of the MCP tool to call")
@@ -16,6 +19,7 @@ async def mcp_call(name: str, args: Dict[str, Any]) -> Any:
       - name: str
       - args: dict
     """
+    logger.info(f"mcp_call: name={name}, args={args}")
     server_name, tool_name = name.split(".", 1)
 
     mcp = get_mcp_client()
