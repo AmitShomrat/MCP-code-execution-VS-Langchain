@@ -171,18 +171,18 @@ This server provides database operations. **Always inspect the schema before que
 ## UI Example of Usage
 
 ### Pre-Execution
-
+![Pre execution img](./docs/images/pre-execution-ui-usage.png)
 - Main interface with task mode selector (single or multi-task)
 - Test environment allows tasks to be uploaded or manually defined
 - Run configuration panel: maximum turn limit (to prevent infinite LLM calls), MCP execution approach (Traditional, Code Execution, or both)
 
 ### Post-Execution
-
+![Post execution img](./docs/images/post-execution-ui-usage.png)
 - Benchmarks presented as a list of tasks, each in a collapsible panel
 - Metrics: time, total token usage, total LLM calls
 
 ### Output Block Structure
-
+![Output block img](./docs/images/output-block-ui-usage.png)
 - **OUTPUT Block**: Displays final results (e.g., threat MCP server output that guides the agent to redundant or malicious operations)
 - **LLM CALLS Block**: Per-turn inspection. Each turn divides into:
   - **REQUEST TO LLM**: User query or previous turn results, plus the Assistant context
