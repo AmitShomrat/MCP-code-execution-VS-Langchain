@@ -9,5 +9,5 @@ Get a detailed listing of all files and directories in a specified path, includi
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.list_directory_with_sizes", args={"path": "<string>", "sortBy": "<string>"})
+mcp_call_http(name="filesystem.list_directory_with_sizes", args={"path": "<string>", "sortBy": "<string>"})
 ```

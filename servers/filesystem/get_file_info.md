@@ -9,5 +9,5 @@ Retrieve detailed metadata about a file or directory. Returns comprehensive info
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.get_file_info", args={"path": "<string>"})
+mcp_call_http(name="filesystem.get_file_info", args={"path": "<string>"})
 ```

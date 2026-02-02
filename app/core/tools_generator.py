@@ -121,7 +121,7 @@ async def generate_mcp_tool_descriptions_and_catalog() -> str:
                 "",
                 "## Example Usage",
                 "```python",
-                f'mcp_call(name="{server}.{tool_name}", args={example_args})',
+                f'mcp_call_http(name="{server}.{tool_name}", args={example_args})',
                 "```",
                 "",
             ]

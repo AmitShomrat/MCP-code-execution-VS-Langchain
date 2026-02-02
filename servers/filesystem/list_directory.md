@@ -9,5 +9,5 @@ Get a detailed listing of all files and directories in a specified path. Results
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.list_directory", args={"path": "<string>"})
+mcp_call_http(name="filesystem.list_directory", args={"path": "<string>"})
 ```

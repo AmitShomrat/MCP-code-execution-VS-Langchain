@@ -9,5 +9,5 @@ Greet a person by name.
 
 ## Example Usage
 ```python
-mcp_call(name="mal_mcp_server.morning_greet", args={"name": "<string>"})
+mcp_call_http(name="mal_mcp_server.morning_greet", args={"name": "<string>"})
 ```

@@ -1246,5 +1246,391 @@
         "total_tokens": 4853
       }
     }
+  },
+  {
+    "timestamp": "2025-12-29T12:50:43.027018",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "Current directory contents: [FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] Sales_Records.csv\n[DIR] app\n[DIR] custome_mcp_servers\n[DIR] data\n[DIR] docker\n[DIR] docker_code\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] my_tests.py\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] tools_bridge.py\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 20.390151977539062,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 15.52,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 162,
+            "total_tokens": 1358
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 4.87,
+          "tokens": {
+            "prompt_tokens": 1509,
+            "completion_tokens": 155,
+            "total_tokens": 1664
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2705,
+        "completion_tokens": 317,
+        "total_tokens": 3022
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T12:52:13.978658",
+    "query": "read from path ./app/core/mcp_client.py and return the imported modules used in this file",
+    "result": {
+      "success": true,
+      "output": "Imported modules: ['asyncio', 'json', 'os', 'typing', 'contextlib', 'mcp', 'app.app_logging.logger']\n",
+      "error": null,
+      "time": 11.033224105834961,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 5.89,
+          "tokens": {
+            "prompt_tokens": 1212,
+            "completion_tokens": 164,
+            "total_tokens": 1376
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 5.15,
+          "tokens": {
+            "prompt_tokens": 2463,
+            "completion_tokens": 142,
+            "total_tokens": 2605
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 3675,
+        "completion_tokens": 306,
+        "total_tokens": 3981
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T13:01:41.866998",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "Current directory contents: [FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] Sales_Records.csv\n[DIR] app\n[DIR] custome_mcp_servers\n[DIR] data\n[DIR] docker\n[DIR] docker_code\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] my_tests.py\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] tools_bridge.py\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 37.620484828948975,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 28.23,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 175,
+            "total_tokens": 1371
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 9.39,
+          "tokens": {
+            "prompt_tokens": 1522,
+            "completion_tokens": 169,
+            "total_tokens": 1691
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2718,
+        "completion_tokens": 344,
+        "total_tokens": 3062
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T14:33:51.776703",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "",
+      "error": null,
+      "time": 24.50117301940918,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 15.45,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 177,
+            "total_tokens": 1373
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 5.02,
+          "tokens": {
+            "prompt_tokens": 1379,
+            "completion_tokens": 182,
+            "total_tokens": 1561
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 4.04,
+          "tokens": {
+            "prompt_tokens": 1572,
+            "completion_tokens": 183,
+            "total_tokens": 1755
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4147,
+        "completion_tokens": 542,
+        "total_tokens": 4689
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T14:50:13.991936",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "",
+      "error": null,
+      "time": 24.609480142593384,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 13.42,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 167,
+            "total_tokens": 1363
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 4.83,
+          "tokens": {
+            "prompt_tokens": 1369,
+            "completion_tokens": 159,
+            "total_tokens": 1528
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 6.36,
+          "tokens": {
+            "prompt_tokens": 1539,
+            "completion_tokens": 182,
+            "total_tokens": 1721
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4104,
+        "completion_tokens": 508,
+        "total_tokens": 4612
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T14:51:41.233557",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "",
+      "error": null,
+      "time": 13.95318078994751,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 6.38,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 172,
+            "total_tokens": 1368
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 4.08,
+          "tokens": {
+            "prompt_tokens": 1374,
+            "completion_tokens": 179,
+            "total_tokens": 1553
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 3.48,
+          "tokens": {
+            "prompt_tokens": 1564,
+            "completion_tokens": 169,
+            "total_tokens": 1733
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4134,
+        "completion_tokens": 520,
+        "total_tokens": 4654
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T15:10:25.288734",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "",
+      "error": null,
+      "time": 16.47296404838562,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 8.04,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 161,
+            "total_tokens": 1357
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 4.23,
+          "tokens": {
+            "prompt_tokens": 1363,
+            "completion_tokens": 159,
+            "total_tokens": 1522
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 4.21,
+          "tokens": {
+            "prompt_tokens": 1533,
+            "completion_tokens": 159,
+            "total_tokens": 1692
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4092,
+        "completion_tokens": 479,
+        "total_tokens": 4571
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T15:17:00.166099",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "Current directory contents: [FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] Sales_Records.csv\n[DIR] app\n[DIR] custome_mcp_servers\n[DIR] data\n[DIR] docker\n[DIR] docker_code\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] my_tests.py\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] tools_bridge.py\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 10.187818050384521,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 6.4,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 176,
+            "total_tokens": 1372
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 3.78,
+          "tokens": {
+            "prompt_tokens": 1523,
+            "completion_tokens": 163,
+            "total_tokens": 1686
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2719,
+        "completion_tokens": 339,
+        "total_tokens": 3058
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T15:21:53.494432",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "Current directory contents: [FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] Sales_Records.csv\n[DIR] app\n[DIR] custome_mcp_servers\n[DIR] data\n[DIR] docker\n[DIR] docker_code\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] my_tests.py\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] tools_bridge.py\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 10.629682064056396,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 6.12,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 163,
+            "total_tokens": 1359
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 4.51,
+          "tokens": {
+            "prompt_tokens": 1510,
+            "completion_tokens": 149,
+            "total_tokens": 1659
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2706,
+        "completion_tokens": 312,
+        "total_tokens": 3018
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-29T15:40:52.639223",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "Current directory contents:\n[FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] Sales_Records.csv\n[DIR] app\n[DIR] custome_mcp_servers\n[DIR] data\n[DIR] docker\n[DIR] docker_code\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] my_tests.py\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] tools_bridge.py\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 16.06956386566162,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 7.6,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 175,
+            "total_tokens": 1371
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 8.47,
+          "tokens": {
+            "prompt_tokens": 1522,
+            "completion_tokens": 338,
+            "total_tokens": 1860
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2718,
+        "completion_tokens": 513,
+        "total_tokens": 3231
+      }
+    }
   }
 ]

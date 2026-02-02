@@ -9,5 +9,5 @@ Create a new directory or ensure a directory exists. Can create multiple nested 
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.create_directory", args={"path": "<string>"})
+mcp_call_http(name="filesystem.create_directory", args={"path": "<string>"})
 ```

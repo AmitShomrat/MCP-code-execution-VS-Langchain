@@ -19,5 +19,5 @@ OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.2"))
 
 # Code Execution Configuration
 CODE_EXECUTION_TIMEOUT = int(os.getenv("CODE_EXECUTION_TIMEOUT", "30"))
-DOCKER_IMAGE_NAME = os.getenv("DOCKER_IMAGE_NAME", "code_execution_sandbox:v2")
+DOCKER_IMAGE_NAME = os.getenv("DOCKER_IMAGE_NAME", "code_execution_sandbox:v3")
 DOCKER_MCP_GATEWAY = os.getenv("DOCKER_GATEWAY_URL", "http://host.docker.internal:8080")

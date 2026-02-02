@@ -9,5 +9,5 @@ Create a new file or completely overwrite an existing file with new content. Use
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.write_file", args={"path": "<string>", "content": "<string>"})
+mcp_call_http(name="filesystem.write_file", args={"path": "<string>", "content": "<string>"})
 ```

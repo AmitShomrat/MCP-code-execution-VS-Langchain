@@ -247,9 +247,7 @@ class RealMCPOrchestrator:
         # Log any errors that occurred during execution
         if execution_result['error']:
             logger.error(f"\nError: {execution_result['error']}")
-        
-        # Return execution result dictionary
-        logger.info(f"Execution result: {execution_result}")
+
         return execution_result
     
     def _update_conversation_with_results(self, llm_call_number: int, response: Dict, 
@@ -346,6 +344,7 @@ class RealMCPOrchestrator:
         """
         # Close all MCP client connections
         await self.mcp_client.close()
+        await self.docker_executor.cleanup()
 
 
    

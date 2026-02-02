@@ -9,5 +9,5 @@ Read an image or audio file. Returns the base64 encoded data and MIME type. Only
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.read_media_file", args={"path": "<string>"})
+mcp_call_http(name="filesystem.read_media_file", args={"path": "<string>"})
 ```

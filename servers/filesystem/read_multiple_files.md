@@ -9,5 +9,5 @@ Read the contents of multiple files simultaneously. This is more efficient than 
 
 ## Example Usage
 ```python
-mcp_call(name="filesystem.read_multiple_files", args={"paths": []})
+mcp_call_http(name="filesystem.read_multiple_files", args={"paths": []})
 ```

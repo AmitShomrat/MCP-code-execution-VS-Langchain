@@ -216,8 +216,10 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
         )
         
     except Exception as e:
-        # Log error and raise HTTP exception
-        logger.error(f"Code Execution MCP benchmark error: {str(e)}")
+        # Log error with full traceback
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Code Execution MCP benchmark error:\n{error_details}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Benchmark execution failed: {str(e)}"
