@@ -12,3 +12,7 @@ logs/
 *.swp
 *.swo
 costume_mcp_servers/databasefile
+NOTES.md
+README.bak
+Sales_Records.csv
+.venv/
