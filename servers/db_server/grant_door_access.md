@@ -29,14 +29,14 @@ Grants door access to a user by adding their passkey to the door's allowed passk
         "role": {
           "type": "string"
         },
-        "pass_key": {
+        "passkey": {
           "type": "string"
         }
       },
       "required": [
         "name",
         "role",
-        "pass_key"
+        "passkey"
       ],
       "type": "object"
     }

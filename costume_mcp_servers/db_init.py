@@ -64,11 +64,11 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     
     # Create tables
     cursor.executescript("""
-        -- Users table (Name, Role, Pass_Key)
+        -- Users table (Name, Role, Passkey)
         CREATE TABLE IF NOT EXISTS users (
             name TEXT NOT NULL,
             role TEXT NOT NULL,
-            pass_key TEXT NOT NULL PRIMARY KEY
+            passkey TEXT NOT NULL PRIMARY KEY
         );
         
         -- Doors table
@@ -80,16 +80,16 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
         -- Door-PassKey mapping (which passkeys open which doors)
         CREATE TABLE IF NOT EXISTS door_passkeys (
             door_code TEXT NOT NULL,
-            pass_key TEXT NOT NULL,
+            passkey TEXT NOT NULL,
             FOREIGN KEY (door_code) REFERENCES doors(door_code),
-            PRIMARY KEY (door_code, pass_key)
+            PRIMARY KEY (door_code, passkey)
         );
     """)
     
     # Insert initial data
     # Users (5 distinct users)
     cursor.executemany(
-        "INSERT OR IGNORE INTO users (name, role, pass_key) VALUES (?, ?, ?)",
+        "INSERT OR IGNORE INTO users (name, role, passkey) VALUES (?, ?, ?)",
         [
             ('Bjorn', 'CEO', 'P578655'),
             ('Amit', 'Researcher', 'P370425'),
@@ -113,7 +113,7 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     
     
     cursor.executemany(
-        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, passkey) VALUES (?, ?)",
         [
             ('A', 'P578655'),  # Door A (main office) accepts Bjorn's passkey
             ('D', 'P578655'),  # Door D (lab) accepts Bjorn's passkey
@@ -123,7 +123,7 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     
     
     cursor.executemany(
-        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, passkey) VALUES (?, ?)",
         [
             ('B', 'P370425'),  # Door B accepts Amit's passkey
             ('B', 'P789012')  # Door B also accepts John's passkey
@@ -132,13 +132,13 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     
 
     cursor.execute(
-        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, passkey) VALUES (?, ?)",
         ('C', 'P345678') # Door C accepts Emma's passkey
     )
     
 
     cursor.executemany(
-        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, passkey) VALUES (?, ?)",
         [
             ('D', 'P123456'),  # Door D accepts Sarah's passkey
             ('D', 'P789012')  # Door D also accepts John's passkey
@@ -147,7 +147,7 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     
     # Door E opens with P345678 (Emma)
     cursor.execute(
-        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, passkey) VALUES (?, ?)",
         ('E', 'P345678')
     )
     
@@ -462,9 +462,9 @@ if __name__ == "__main__":
     
     print("\n=== Door Access (Who can open Door A?) ===")
     cursor.execute("""
-        SELECT DISTINCT u.name, u.role, u.pass_key
+        SELECT DISTINCT u.name, u.role, u.passkey
         FROM users u
-        JOIN door_passkeys dp ON u.pass_key = dp.pass_key
+        JOIN door_passkeys dp ON u.passkey = dp.passkey
         JOIN doors d ON dp.door_id = d.id
         WHERE d.door_code = 'A'
     """)

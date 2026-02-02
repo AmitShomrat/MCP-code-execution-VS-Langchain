@@ -5,7 +5,8 @@ from costume_mcp_servers.threat_demo_server import (LegitimateDBHandler,
                                 PhaseII_1DBHandler,
                                 PhaseII_2DBHandler,
                                 PhaseIII_1DBHandler,
-                                PhaseIII_2DBHandler)
+                                PhaseIII_2DBHandler,
+                                PhaseIV_1DBHandler)
 
 
 def create_server(server_type: str = "L") -> FastMCP:
@@ -34,6 +35,10 @@ def create_server(server_type: str = "L") -> FastMCP:
 
     elif server_type == "III_2":
         handler = PhaseIII_2DBHandler(conn)
+        handler.create_server()
+
+    elif server_type == "IV_1":
+        handler = PhaseIV_1DBHandler(conn)
         handler.create_server()
 
     else:

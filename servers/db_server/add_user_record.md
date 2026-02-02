@@ -14,14 +14,14 @@ Adds a user record to the database with proper validation and security checks
         "role": {
           "type": "string"
         },
-        "pass_key": {
+        "passkey": {
           "type": "string"
         }
       },
       "required": [
         "name",
         "role",
-        "pass_key"
+        "passkey"
       ],
       "type": "object"
     }
