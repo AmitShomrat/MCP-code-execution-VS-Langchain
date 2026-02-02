@@ -26,15 +26,25 @@ class Agent(ABC):
         self.model = model or OPENAI_MODEL
         self.max_tokens = OPENAI_MAX_TOKENS
     
-    @classmethod
+    
     def llm_call(self, messages: List[Dict[str, str]]) -> Dict[str, str]:
         try:
-            return self.client.chat.completions.create(
+            result = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 max_tokens=self.max_tokens,
                 temperature=OPENAI_TEMPERATURE
             )
+            raw_result = result.choices[0].message.content
+            
+            result = json.loads(raw_result)
+            result["token_usage"] = {
+                "prompt_tokens": result.usage.prompt_tokens,
+                "completion_tokens": result.usage.completion_tokens,
+                "total_tokens": result.usage.total_tokens
+            }
+            return result
+
         except Exception as e:
             logger.error(f"Error calling LLM: {e}")
             raise e
@@ -71,6 +81,7 @@ class OpenAICodeAgent(Agent):
         
         Raises:
             ValueError: If LLM response is invalid JSON or missing fields
+            llm_call Exceptions errors
         """
         # Build messages array with system prompt and conversation history
         openai_messages = [{"role": "system", "content": AGENT_PROMPT}] # The AGENT_PROMPT used while Maintenance a messeges list
@@ -80,16 +91,10 @@ class OpenAICodeAgent(Agent):
 
         # Read openAI docs Response and try to bind and provide the tools def's for the agent.
         # Call OpenAI API with JSON mode to ensure structured response
-        response = None
         try:
-            response = self.llm_call(openai_messages)
+            result = await self.llm_call(openai_messages)
         except Exception as e:
-            logger.error(f"Error calling LLM: {e}")
             raise e
-        
-        # Parse JSON response from LLM
-        raw_response = response.choices[0].message.content
-        result = json.loads(raw_response)
         
         # Validate required fields are present
         if "status" not in result or "code" not in result:
@@ -99,15 +104,10 @@ class OpenAICodeAgent(Agent):
         if result["status"] not in ["exploring", "complete"]:
             raise ValueError(f"Invalid status value: {result['status']}")
         
-        # Add token usage information
-        result["token_usage"] = {
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens
-        }
-        
         return result
 
+
+    # Deprecated: This method is not used anymore.
     async def generate_final_answer(
         self,
         user_query: str,

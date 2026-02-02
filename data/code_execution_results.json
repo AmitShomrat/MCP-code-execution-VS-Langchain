@@ -1260,5 +1260,68 @@
         }
       ]
     }
+  },
+  {
+    "timestamp": "2026-01-25T11:57:25.454282",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:06:48.671360",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:12:18.822566",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:21:15.841029",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:23:05.725376",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:24:41.057037",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:29:16.601429",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
   }
 ]
