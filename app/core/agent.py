@@ -93,7 +93,7 @@ class OpenAICodeAgent(Agent):
         
         Returns:
             Dictionary with:
-                - status: "exploring" or "complete"
+                - status: "exploring" "execution" or "complete"
                 - code: Generated Python code
                 - reasoning: Explanation of status choice
         
@@ -120,7 +120,7 @@ class OpenAICodeAgent(Agent):
             raise ValueError(f"Invalid LLM response format: {result}")
         
         # Validate status value
-        if result["status"] not in ["exploring", "complete"]:
+        if result["status"] not in ["exploring", "execution", "complete"]:
             raise ValueError(f"Invalid status value: {result['status']}")
         
         return result

@@ -32,9 +32,12 @@
         <!-- Single Task Mode -->
         <div id="singleTaskMode">
             <section class="query-section">
-                <h2>Enter Your Query</h2>
+                <label for="queryInput">
+                    <h2>Enter Your Query</h2>
+                </label>
                 <textarea 
-                    id="queryInput" 
+                    id="queryInput"
+                    name="queryInput"
                     placeholder="Example: Calculate total revenue in Sales_Records.csv"
                     rows="3"
                 ></textarea>
@@ -193,7 +196,8 @@
                     <div class="task-input-header">
                         <h3>Add Tasks</h3>
                         <div class="header-actions">
-                            <input type="file" id="uploadTasksFile" accept=".json" style="display: none;">
+                            <label for="uploadTasksFile" style="display: none;">Upload Tasks JSON File</label>
+                            <input type="file" id="uploadTasksFile" name="uploadTasksFile" accept=".json" style="display: none;" aria-label="Upload Tasks JSON File">
                             <button id="uploadTasksBtn" class="btn-small btn-upload">
                                 <span>📤</span> Upload Tasks JSON
                             </button>
@@ -226,14 +230,14 @@
                             </div>
                         </div>
                         <div id="judgeOptionContainer" class="judge-option-container" style="display: none;">
-                            <label class="judge-checkbox-label">
-                                <input type="checkbox" id="useJudgeCheckbox" />
+                            <label class="judge-checkbox-label" for="useJudgeCheckbox">
+                                <input type="checkbox" id="useJudgeCheckbox" name="useJudgeCheckbox" />
                                 <span>Use LLM as Judge for CE</span>
                             </label>
                         </div>
-                        <label>
+                        <label for="maxTurns">
                             Max LLM Turns:
-                            <input type="number" id="maxTurns" value="10" min="1" max="50" />
+                            <input type="number" id="maxTurns" name="maxTurns" value="10" min="1" max="50" />
                         </label>
                         <button id="runAllTasksBtn" class="btn btn-primary">
                             <span class="btn-icon">🚀</span>

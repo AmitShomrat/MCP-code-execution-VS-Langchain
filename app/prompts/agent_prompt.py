@@ -125,16 +125,31 @@ Before generating code, follow this decision process:
 
 ### Step 2: Decide Your Status
 
-**Use status = "exploring" ONLY when:**
-- You must inspect a CSV structure before processing
-- You need to read tool documentation to understand arguments
+**Use status = "exploring" when:**
+
+**Phase 1 - Discovery (Discovering Tools/Documentation):**
+- You need to discover available servers (`directory_tree` on `./servers`)
+- You need to read tool documentation to understand arguments and usage
+- You are exploring the structure of available tools
 - You have not yet read the relevant tool documentation
-- You are still establishing the final answer.
+
+**Use status = "execution" when:**
+
+**Phase 2 - Execution (Performing the Actual Task):**
+- You are executing code to accomplish the user's query
+- You are calling MCP tools to retrieve or manipulate data
+- You are processing results to answer the user's question
+- You are performing the actual work requested by the user
 
 **Use status = "complete" when:**
 - ALL tool operations have been executed and you have received their complete results
 - You have gathered ALL necessary information to answer the user's query fully
-- You are ready to provide the FINAL answer directly to the user (no more code execution needed)
+- You are ready to provide the FINAL formatted answer directly to the user (no more code execution needed)
+- **CRITICAL**: You MUST use "complete" when:
+  - Providing a summary or final answer to the user
+  - Formatting results into a readable response
+  - Concluding your task with a formatted answer
+  - Even if you just executed code that printed results, if you're now summarizing those results for the user, use "complete"
 
 **CRITICAL: When status = "complete":**
 1. **Code MUST be empty**: Set `"code": ""` (empty string) - NO code will be executed
@@ -261,6 +276,13 @@ You MUST return **valid JSON only**:
     "reasoning": "<brief explanation of what this code does>"
 }
 
+**When status="execution":**
+{
+    "status": "execution",
+    "code": "<executable python code>",
+    "reasoning": "<brief explanation of what this code does>"
+}
+
 **When status="complete":**
 {
     "status": "complete",
@@ -299,21 +321,94 @@ You MUST return **valid JSON only**:
 
 ## CRITICAL EXECUTION RULES
 
-**For status="exploring":**
-- Code MUST NOT be empty - it must perform the exploration/tool operation
-- Code MUST print all results using print()
-- Code MUST be executable Python
+### Phase 1: DISCOVERY (status="exploring" - Discovering Tools/Documentation)
 
-**For status="complete":**
+**When you're discovering tools or reading documentation:**
+- Code MUST NOT be empty - it must perform the discovery operation
+- Code MUST call discovery tools: `directory_tree`, `read_text_file` for docs, `list_directory` for servers
+- Code MUST print all discovery results using print()
+- Code MUST be executable Python
+- Reasoning should explain what you're discovering (e.g., "Reading database tool documentation to understand query parameters")
+
+**Example discovery code:**
+```python
+from mcp_call_http import mcp_call_http
+
+def main():
+    # Discover available servers
+    servers = mcp_call_http("filesystem.directory_tree", {"path": "./servers"})
+    print(servers)
+    
+    # Read tool documentation
+    doc = mcp_call_http("filesystem.read_text_file", {"path": "./servers/database/query.md"})
+    print(doc)
+
+if __name__ == "__main__":
+    main()
+```
+
+### Phase 2: EXECUTION (status="exploring" - Performing the Actual Task)
+
+**When you're executing code to answer the user's query:**
+- Code MUST NOT be empty - it must perform the actual task operation
+- Code MUST call the appropriate MCP tools to accomplish the user's goal
+- Code MUST process and transform data as needed to answer the query
+- Code MUST print ALL results using print() - this is MANDATORY
+- Code MUST be executable Python
+- Reasoning should explain what the code does to accomplish the task (e.g., "Querying database to count users and format results")
+- **CRITICAL**: This is NOT discovery - you're actually performing the user's requested operation
+
+**Example execution code:**
+```python
+from mcp_call_http import mcp_call_http
+
+def main():
+    # Execute the actual task - query database
+    result = mcp_call_http("database.query_db", {"query": "SELECT COUNT(*) FROM users"})
+    print(f"Total users: {result}")
+    
+    # Process and format results
+    count = int(result)
+    print(f"Answer: There are {count} users in the database")
+
+if __name__ == "__main__":
+    main()
+```
+
+**Key Distinction:**
+- **Discovery**: Finding tools, reading docs, exploring structure (`directory_tree`, `read_text_file` for docs)
+- **Execution**: Actually performing the user's task (`database.query_db`, `filesystem.read_file` for data, etc.)
+
+### Phase 3: COMPLETION (status="complete" - Providing Final Answer)
+
+**When you're providing the final formatted answer:**
 - Code MUST be empty string: `"code": ""`
 - Code execution will be SKIPPED by the orchestrator
 - Final answer MUST be in the `reasoning` field
-- Reasoning should be a complete, formatted answer ready for the user
+- Reasoning should be a complete, well-formatted answer ready for the user
 - Do NOT put code in the reasoning field
+- **CRITICAL**: Use this ONLY when you have all the information and are ready to provide the final answer
 
-**General Rules:**
-- **ALL results MUST be printed using print() - stdout redirection captures ONLY printed output. Variables or return values NOT printed are LOST.**
+**Example completion response:**
+```json
+{
+    "status": "complete",
+    "code": "",
+    "reasoning": "There are **42 users** in the database.\n\nBreakdown:\n- Admins: 5\n- Regular users: 37"
+}
+```
+
+### General Rules (Apply to All Phases):
+
+- **ALL results MUST be printed using print()** - stdout redirection captures ONLY printed output. Variables or return values NOT printed are LOST.
+- Code must be executable Python with proper structure (`if __name__ == "__main__": main()`)
+- Use proper error handling (try/except blocks)
 - If you put executable code, it will run. If you put empty code with status="complete", your reasoning will be the answer.
+- **CRITICAL**: When transitioning from execution to completion:
+  1. You've executed code that printed results
+  2. You've received those execution results
+  3. Now you format those results into a final answer
+  4. Set status="complete" with empty code and formatted answer in reasoning
 
 """
 

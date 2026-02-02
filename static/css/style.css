@@ -1070,6 +1070,13 @@ tbody tr:hover {
     gap: 10px;
 }
 
+.task-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: -5px;
+}
+
 .task-item input,
 .task-item textarea {
     width: 100%;
@@ -1822,6 +1829,16 @@ tbody tr:hover {
     font-size: 0.8rem;
 }
 
+.judge-indicator {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--code-exec-color);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
 /* LLM Call Content (Expanded Section) */
 .llm-call-content {
     padding: 20px;
@@ -1895,6 +1912,250 @@ tbody tr:hover {
 
 .llm-message .message-content::-webkit-scrollbar {
     width: 8px;
+}
+
+/* Judge Turns Section */
+.judge-turns-section {
+    margin-top: 15px;
+    border-top: 2px solid var(--border-color);
+    padding-top: 15px;
+}
+
+.judge-turns-details {
+    background: var(--secondary-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.judge-turns-summary {
+    padding: 12px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--text-primary);
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.judge-turns-summary:hover {
+    background: var(--hover-bg);
+}
+
+.judge-turns-summary .summary-arrow {
+    transition: transform 0.2s ease;
+    color: var(--code-exec-color);
+}
+
+.judge-turns-details[open] .judge-turns-summary .summary-arrow {
+    transform: rotate(90deg);
+}
+
+.judge-turns-label {
+    color: var(--code-exec-color);
+    font-size: 0.9rem;
+}
+
+.judge-turns-content {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.judge-turn-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.judge-turn-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.judge-turn-number {
+    font-weight: 700;
+    color: var(--code-exec-color);
+    font-size: 0.9rem;
+}
+
+.judge-turn-status {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.judge-turn-status.success {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--code-exec-color);
+}
+
+.judge-turn-status.pre_execution_failed,
+.judge-turn-status.post_execution_failed {
+    background: rgba(255, 166, 0, 0.2);
+    color: var(--warning-color);
+}
+
+.judge-turn-status.error {
+    background: rgba(233, 69, 96, 0.2);
+    color: var(--traditional-color);
+}
+
+.judge-turn-time {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.judge-turn-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.judge-phase {
+    padding: 10px;
+    background: var(--secondary-bg);
+    border-radius: 4px;
+    border-left: 3px solid var(--border-color);
+}
+
+.judge-phase.pre-execution {
+    border-left-color: var(--warning-color);
+}
+
+.judge-phase.code-generation {
+    border-left-color: var(--code-exec-color);
+}
+
+.judge-phase.execution {
+    border-left-color: var(--success-color);
+}
+
+.judge-phase.post-execution {
+    border-left-color: var(--traditional-color);
+}
+
+.judge-phase strong {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.judge-result,
+.code-generation-content,
+.execution-result {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.judge-status-badge,
+.execution-status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.judge-status-badge.passed,
+.execution-status-badge.success {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--code-exec-color);
+}
+
+.judge-status-badge.failed,
+.execution-status-badge.error {
+    background: rgba(233, 69, 96, 0.2);
+    color: var(--traditional-color);
+}
+
+.judge-reasoning,
+.code-reasoning {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 8px;
+    background: var(--primary-bg);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.judge-tokens,
+.code-tokens {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.code-details {
+    margin-top: 8px;
+}
+
+.code-details summary {
+    cursor: pointer;
+    color: var(--code-exec-color);
+    font-size: 0.85rem;
+    padding: 4px 0;
+}
+
+.code-block {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Courier New', Consolas, Monaco, monospace;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+
+.execution-output-details {
+    margin-top: 8px;
+}
+
+.execution-output-details summary {
+    cursor: pointer;
+    color: var(--success-color);
+    font-size: 0.85rem;
+    padding: 4px 0;
+}
+
+.execution-output {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Courier New', Consolas, Monaco, monospace;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.execution-error,
+.judge-error {
+    color: var(--traditional-color);
+    font-size: 0.85rem;
+    padding: 8px;
+    background: rgba(233, 69, 96, 0.1);
+    border-radius: 4px;
+    border-left: 3px solid var(--traditional-color);
 }
 
 .llm-message .message-content::-webkit-scrollbar-track {

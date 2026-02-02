@@ -813,13 +813,19 @@ function addTaskItem() {
     
     taskItem.innerHTML = `
         <div class="task-item-content">
+            <label for="task-id-${taskCounter}" class="task-label">Task ID:</label>
             <input 
                 type="text" 
+                id="task-id-${taskCounter}"
+                name="task-id-${taskCounter}"
                 placeholder="Task ID (e.g., task_${taskCounter})" 
                 class="task-id-input"
                 value="task_${taskCounter}"
             />
+            <label for="task-query-${taskCounter}" class="task-label">Query:</label>
             <textarea 
+                id="task-query-${taskCounter}"
+                name="task-query-${taskCounter}"
                 placeholder="Enter your query (e.g., Calculate total revenue in Sales_Records.csv)"
                 class="task-query-input"
                 rows="2"
@@ -927,13 +933,19 @@ function loadTasksFromJSON(tasks) {
         
         taskItem.innerHTML = `
             <div class="task-item-content">
+                <label for="task-id-${taskCounter}" class="task-label">Task ID:</label>
                 <input 
                     type="text" 
+                    id="task-id-${taskCounter}"
+                    name="task-id-${taskCounter}"
                     placeholder="Task ID (e.g., task_${taskCounter})" 
                     class="task-id-input"
                     value="${escapeHtml(taskId)}"
                 />
+                <label for="task-query-${taskCounter}" class="task-label">Query:</label>
                 <textarea 
+                    id="task-query-${taskCounter}"
+                    name="task-query-${taskCounter}"
                     placeholder="Enter your query (e.g., Calculate total revenue in Sales_Records.csv)"
                     class="task-query-input"
                     rows="2"
@@ -944,14 +956,14 @@ function loadTasksFromJSON(tasks) {
                     <div class="task-details-content">
                         ${expectedBehaviour ? `
                         <div class="task-detail-field">
-                            <label>Expected Behaviour:</label>
-                            <textarea class="task-expected-behaviour" rows="2" readonly>${escapeHtml(expectedBehaviour)}</textarea>
+                            <label for="task-expected-behaviour-${taskCounter}">Expected Behaviour:</label>
+                            <textarea id="task-expected-behaviour-${taskCounter}" name="task-expected-behaviour-${taskCounter}" class="task-expected-behaviour" rows="2" readonly>${escapeHtml(expectedBehaviour)}</textarea>
                         </div>
                         ` : ''}
                         ${expectedOutput ? `
                         <div class="task-detail-field">
-                            <label>Expected Output:</label>
-                            <textarea class="task-expected-output" rows="2" readonly>${escapeHtml(expectedOutput)}</textarea>
+                            <label for="task-expected-output-${taskCounter}">Expected Output:</label>
+                            <textarea id="task-expected-output-${taskCounter}" name="task-expected-output-${taskCounter}" class="task-expected-output" rows="2" readonly>${escapeHtml(expectedOutput)}</textarea>
                         </div>
                         ` : ''}
                     </div>
@@ -1496,8 +1508,22 @@ function displayDetailedResults(results) {
             console.log('turnDetails:', turnDetails);
             
             return calls.map((call, callIndex) => {
-                const turn = turnDetails && turnDetails[callIndex];
-                console.log(`Turn ${callIndex}:`, turn);
+                // Find turn by matching call_number with turn_number, or by array index as fallback
+                let turn = null;
+                if (turnDetails) {
+                    turn = turnDetails.find(t => t.turn_number === call.call_number);
+                    // Fallback to array index if not found by turn_number
+                    if (!turn && turnDetails[callIndex]) {
+                        turn = turnDetails[callIndex];
+                    }
+                }
+                console.log(`Turn ${callIndex} (call_number: ${call.call_number}):`, turn);
+                console.log(`Turn ${callIndex} judge_turns:`, turn?.judge_turns);
+                if (turn?.judge_turns) {
+                    console.log(`Found ${turn.judge_turns.length} judge turns for turn ${call.call_number}`);
+                } else {
+                    console.log(`No judge_turns found for turn ${call.call_number}. Turn details keys:`, turn ? Object.keys(turn) : 'turn is null');
+                }
                 
                 // Check if we have any meaningful details
                 const hasRequest = turn && turn.llm_request && (
@@ -1509,7 +1535,8 @@ function displayDetailedResults(results) {
                     (turn.llm_response.content && turn.llm_response.content !== "No detailed trace available")
                 );
                 const hasExecution = turn && turn.execution_result;
-                const hasDetails = hasRequest || hasResponse || hasExecution;
+                const hasJudgeTurns = turn && turn.judge_turns && turn.judge_turns.length > 0;
+                const hasDetails = hasRequest || hasResponse || hasExecution || hasJudgeTurns;
                 
                 return `
                     <details class="llm-call-details">
@@ -1518,6 +1545,7 @@ function displayDetailedResults(results) {
                             <span class="call-number">Turn ${call.call_number}</span>
                             <span class="call-latency">${call.latency?.toFixed(2) || 'N/A'}s</span>
                             <span class="call-tokens">${call.tokens?.total_tokens || 0} tokens</span>
+                            ${hasJudgeTurns ? `<span class="judge-indicator">🔍 Judge</span>` : ''}
                             <span class="call-breakdown">
                                 (${call.tokens?.prompt_tokens || 0} prompt + ${call.tokens?.completion_tokens || 0} completion)
                             </span>
@@ -1542,6 +1570,212 @@ function displayDetailedResults(results) {
                             <div class="llm-message llm-execution">
                                 <h8>⚙️ Execution Result:</h8>
                                 <pre class="message-content">${escapeHtml(turn.execution_result)}</pre>
+                            </div>
+                            ` : ''}
+                            
+                            ${hasJudgeTurns ? `
+                            <div class="judge-turns-section">
+                                <details class="judge-turns-details">
+                                    <summary class="judge-turns-summary">
+                                        <span class="summary-arrow">▶</span>
+                                        <span class="judge-turns-label">🔍 LLM Judge Inner Turns (${turn.judge_turns.length})</span>
+                                    </summary>
+                                    <div class="judge-turns-content">
+                                        ${turn.judge_turns.map((judgeTurn, jtIndex) => {
+                                            const statusIcon = judgeTurn.status === 'success' ? '✅' : 
+                                                              judgeTurn.status === 'pre_execution_failed' ? '⚠️' :
+                                                              judgeTurn.status === 'post_execution_failed' ? '❌' : '⏳';
+                                            return `
+                                                <div class="judge-turn-item">
+                                                    <div class="judge-turn-header">
+                                                        <span class="judge-turn-number">Iteration ${judgeTurn.iteration}</span>
+                                                        <span class="judge-turn-status ${judgeTurn.status}">${statusIcon} ${judgeTurn.status}</span>
+                                                        ${judgeTurn.turn_time ? `<span class="judge-turn-time">${judgeTurn.turn_time.toFixed(2)}s</span>` : ''}
+                                                    </div>
+                                                    <div class="judge-turn-details">
+                                                        ${judgeTurn.pre_execution && Object.keys(judgeTurn.pre_execution).length > 0 ? `
+                                                        <div class="judge-phase pre-execution">
+                                                            <strong>Pre-Execution Judge:</strong>
+                                                            <div class="judge-result">
+                                                                <span class="judge-status-badge ${judgeTurn.pre_execution.status ? 'passed' : 'failed'}">
+                                                                    ${judgeTurn.pre_execution.status ? '✓ Passed' : '✗ Failed'}
+                                                                </span>
+                                                                <div class="judge-reasoning">${escapeHtml(judgeTurn.pre_execution.reasoning || '')}</div>
+                                                                ${judgeTurn.pre_execution.tokens ? `
+                                                                <div class="judge-tokens">Tokens: ${judgeTurn.pre_execution.tokens.total_tokens || 0}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.code_generation ? `
+                                                        <div class="judge-phase code-generation">
+                                                            <strong>Code Generation (after judge feedback):</strong>
+                                                            <div class="code-generation-content">
+                                                                ${judgeTurn.code_generation.reasoning ? `
+                                                                <div class="code-reasoning">Reasoning: ${escapeHtml(judgeTurn.code_generation.reasoning)}</div>
+                                                                ` : ''}
+                                                                ${judgeTurn.code_generation.code ? `
+                                                                <details class="code-details">
+                                                                    <summary>Generated Code</summary>
+                                                                    <pre class="code-block">${escapeHtml(judgeTurn.code_generation.code)}</pre>
+                                                                </details>
+                                                                ` : ''}
+                                                                ${judgeTurn.code_generation.tokens ? `
+                                                                <div class="code-tokens">Tokens: ${judgeTurn.code_generation.tokens.total_tokens || 0}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.execution ? `
+                                                        <div class="judge-phase execution">
+                                                            <strong>Code Execution:</strong>
+                                                            <div class="execution-result">
+                                                                <span class="execution-status-badge ${judgeTurn.execution.success ? 'success' : 'error'}">
+                                                                    ${judgeTurn.execution.success ? '✓ Success' : '✗ Failed'}
+                                                                </span>
+                                                                ${judgeTurn.execution.output ? `
+                                                                <details class="execution-output-details">
+                                                                    <summary>Output</summary>
+                                                                    <pre class="execution-output">${escapeHtml(judgeTurn.execution.output)}</pre>
+                                                                </details>
+                                                                ` : ''}
+                                                                ${judgeTurn.execution.error ? `
+                                                                <div class="execution-error">Error: ${escapeHtml(judgeTurn.execution.error)}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.post_execution && Object.keys(judgeTurn.post_execution).length > 0 ? `
+                                                        <div class="judge-phase post-execution">
+                                                            <strong>Post-Execution Judge:</strong>
+                                                            <div class="judge-result">
+                                                                <span class="judge-status-badge ${judgeTurn.post_execution.status ? 'passed' : 'failed'}">
+                                                                    ${judgeTurn.post_execution.status ? '✓ Passed' : '✗ Failed'}
+                                                                </span>
+                                                                <div class="judge-reasoning">${escapeHtml(judgeTurn.post_execution.reasoning || '')}</div>
+                                                                ${judgeTurn.post_execution.tokens ? `
+                                                                <div class="judge-tokens">Tokens: ${judgeTurn.post_execution.tokens.total_tokens || 0}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.error ? `
+                                                        <div class="judge-error">Error: ${escapeHtml(judgeTurn.error)}</div>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </details>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : hasJudgeTurns ? `
+                        <div class="llm-call-content">
+                            ${hasJudgeTurns ? `
+                            <div class="judge-turns-section">
+                                <details class="judge-turns-details">
+                                    <summary class="judge-turns-summary">
+                                        <span class="summary-arrow">▶</span>
+                                        <span class="judge-turns-label">🔍 LLM Judge Inner Turns (${turn.judge_turns.length})</span>
+                                    </summary>
+                                    <div class="judge-turns-content">
+                                        ${turn.judge_turns.map((judgeTurn, jtIndex) => {
+                                            const statusIcon = judgeTurn.status === 'success' ? '✅' : 
+                                                              judgeTurn.status === 'pre_execution_failed' ? '⚠️' :
+                                                              judgeTurn.status === 'post_execution_failed' ? '❌' : '⏳';
+                                            return `
+                                                <div class="judge-turn-item">
+                                                    <div class="judge-turn-header">
+                                                        <span class="judge-turn-number">Iteration ${judgeTurn.iteration}</span>
+                                                        <span class="judge-turn-status ${judgeTurn.status}">${statusIcon} ${judgeTurn.status}</span>
+                                                        ${judgeTurn.turn_time ? `<span class="judge-turn-time">${judgeTurn.turn_time.toFixed(2)}s</span>` : ''}
+                                                    </div>
+                                                    <div class="judge-turn-details">
+                                                        ${judgeTurn.pre_execution && Object.keys(judgeTurn.pre_execution).length > 0 ? `
+                                                        <div class="judge-phase pre-execution">
+                                                            <strong>Pre-Execution Judge:</strong>
+                                                            <div class="judge-result">
+                                                                <span class="judge-status-badge ${judgeTurn.pre_execution.status ? 'passed' : 'failed'}">
+                                                                    ${judgeTurn.pre_execution.status ? '✓ Passed' : '✗ Failed'}
+                                                                </span>
+                                                                <div class="judge-reasoning">${escapeHtml(judgeTurn.pre_execution.reasoning || '')}</div>
+                                                                ${judgeTurn.pre_execution.tokens ? `
+                                                                <div class="judge-tokens">Tokens: ${judgeTurn.pre_execution.tokens.total_tokens || 0}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.code_generation ? `
+                                                        <div class="judge-phase code-generation">
+                                                            <strong>Code Generation (after judge feedback):</strong>
+                                                            <div class="code-generation-content">
+                                                                ${judgeTurn.code_generation.reasoning ? `
+                                                                <div class="code-reasoning">Reasoning: ${escapeHtml(judgeTurn.code_generation.reasoning)}</div>
+                                                                ` : ''}
+                                                                ${judgeTurn.code_generation.code ? `
+                                                                <details class="code-details">
+                                                                    <summary>Generated Code</summary>
+                                                                    <pre class="code-block">${escapeHtml(judgeTurn.code_generation.code)}</pre>
+                                                                </details>
+                                                                ` : ''}
+                                                                ${judgeTurn.code_generation.tokens ? `
+                                                                <div class="code-tokens">Tokens: ${judgeTurn.code_generation.tokens.total_tokens || 0}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.execution ? `
+                                                        <div class="judge-phase execution">
+                                                            <strong>Code Execution:</strong>
+                                                            <div class="execution-result">
+                                                                <span class="execution-status-badge ${judgeTurn.execution.success ? 'success' : 'error'}">
+                                                                    ${judgeTurn.execution.success ? '✓ Success' : '✗ Failed'}
+                                                                </span>
+                                                                ${judgeTurn.execution.output ? `
+                                                                <details class="execution-output-details">
+                                                                    <summary>Output</summary>
+                                                                    <pre class="execution-output">${escapeHtml(judgeTurn.execution.output)}</pre>
+                                                                </details>
+                                                                ` : ''}
+                                                                ${judgeTurn.execution.error ? `
+                                                                <div class="execution-error">Error: ${escapeHtml(judgeTurn.execution.error)}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.post_execution && Object.keys(judgeTurn.post_execution).length > 0 ? `
+                                                        <div class="judge-phase post-execution">
+                                                            <strong>Post-Execution Judge:</strong>
+                                                            <div class="judge-result">
+                                                                <span class="judge-status-badge ${judgeTurn.post_execution.status ? 'passed' : 'failed'}">
+                                                                    ${judgeTurn.post_execution.status ? '✓ Passed' : '✗ Failed'}
+                                                                </span>
+                                                                <div class="judge-reasoning">${escapeHtml(judgeTurn.post_execution.reasoning || '')}</div>
+                                                                ${judgeTurn.post_execution.tokens ? `
+                                                                <div class="judge-tokens">Tokens: ${judgeTurn.post_execution.tokens.total_tokens || 0}</div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                        ` : ''}
+                                                        
+                                                        ${judgeTurn.error ? `
+                                                        <div class="judge-error">Error: ${escapeHtml(judgeTurn.error)}</div>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </details>
                             </div>
                             ` : ''}
                         </div>
@@ -1633,7 +1867,23 @@ function displayDetailedResults(results) {
                         <div class="llm-calls-section">
                             <h7>LLM Calls (${result.code_execution_mcp?.llm_calls?.length || 0}):</h7>
                             <div class="llm-calls-list">
-                                ${formatLLMCalls(result.code_execution_mcp?.llm_calls, result.code_execution_mcp?.turn_details)}
+                                ${(() => {
+                                    const turnDetails = result.code_execution_mcp?.turn_details;
+                                    console.log('Code Exec turn_details:', turnDetails);
+                                    console.log('Code Exec llm_calls:', result.code_execution_mcp?.llm_calls);
+                                    if (turnDetails) {
+                                        turnDetails.forEach((turn, idx) => {
+                                            console.log(`Turn ${idx} (turn_number: ${turn.turn_number}) has judge_turns:`, turn.judge_turns);
+                                            if (turn.judge_turns) {
+                                                console.log(`  Judge turns count: ${turn.judge_turns.length}`);
+                                                turn.judge_turns.forEach((jt, jtIdx) => {
+                                                    console.log(`    Judge turn ${jtIdx}: status=${jt.status}, iteration=${jt.iteration}`);
+                                                });
+                                            }
+                                        });
+                                    }
+                                    return formatLLMCalls(result.code_execution_mcp?.llm_calls, turnDetails);
+                                })()}
                             </div>
                             <div class="total-tokens">
                                 Total: ${result.code_execution_mcp?.tokens?.total_tokens || 0} tokens
