@@ -29,11 +29,16 @@ def print_menu():
     print("     - API documentation at: http://localhost:8000/docs")
     print("     - MCP Gateway at: http://localhost:8080")
     print()
-    print("  2. ❌ Exit")
+    print("  2. 💻 Start MCP Benchmark Dashboard in Development Mode")
+    print("     - Unified web interface at: http://localhost:8000")
+    print("     - API documentation at: http://localhost:8000/docs")
+    print("     - MCP Gateway at: http://localhost:8080")
+    print()
+    print("  3. ❌ Exit")
     print()
 
 
-def start_dashboard():
+def start_dashboard(dev_mode: bool = False):
     """Start the unified FastAPI Dashboard (Main + Gateway with single/multiple task modes)."""
     print("\n" + "=" * 80)
     print("Starting MCP Benchmark Dashboard...")
@@ -51,7 +56,7 @@ def start_dashboard():
     # Import and run the existing main.py logic (already uses shared MCP client)
     try:
         import main
-        asyncio.run(main.main())
+        asyncio.run(main.main(dev_mode=dev_mode))
     except KeyboardInterrupt:
         print("\n\nDashboard stopped")
 
@@ -68,11 +73,16 @@ def main():
             if choice == "1":
                 start_dashboard()
                 break
+            
             elif choice == "2":
+                start_dashboard(dev_mode=True)
+                break
+
+            elif choice == "3":
                 print("\nGoodbye! 👋\n")
                 sys.exit(0)
             else:
-                print("\n❌ Invalid choice. Please enter 1 or 2.\n")
+                print("\n❌ Invalid choice. Please enter 1, 2 or 3.\n")
                 input("Press Enter to continue...")
                 print("\n" * 2)
         except KeyboardInterrupt:

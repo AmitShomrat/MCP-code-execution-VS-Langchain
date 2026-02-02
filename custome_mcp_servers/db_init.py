@@ -95,7 +95,7 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
         "INSERT OR IGNORE INTO users (name, role, pass_key) VALUES (?, ?, ?)",
         [
             ('Bjorn', 'CEO', 'P578655'),
-            ('Amit', 'Anarchist', 'P666666'),
+            ('Amit', 'Researcher', 'P370425'),
             ('Sarah', 'Manager', 'P123456'),
             ('John', 'Developer', 'P789012'),
             ('Emma', 'Security', 'P345678')
@@ -119,7 +119,8 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     cursor.executemany(
         "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
         [
-            (1, 'P578655'),  # Door A accepts Bjorn's passkey
+            (1, 'P578655'),  # Door A (main office) accepts Bjorn's passkey
+            (4, 'P578655'),  # Door D (lab) accepts Bjorn's passkey
             (1, 'P123456')   # Door A also accepts Sarah's passkey
         ]
     )
@@ -128,7 +129,7 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     cursor.executemany(
         "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
         [
-            (2, 'P666666'),  # Door B accepts Amit's passkey
+            (2, 'P370425'),  # Door B accepts Amit's passkey
             (2, 'P789012')  # Door B also accepts John's passkey
         ]
     )
@@ -396,7 +397,7 @@ def reset_shared_db():
     return _db_conn
 
 
-# MY_CODE
+
 def _cleanup_db_files(db_path: str):
     """
     Clean up database file and related SQLite files (journal, WAL, SHM).

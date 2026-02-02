@@ -1,6 +1,7 @@
 """
 Persistent Docker executor - keeps container alive and sends code via stdin.
 """
+import os
 import asyncio
 import json
 from typing import Dict, Any, Optional
@@ -29,9 +30,34 @@ class DockerCodeExecutor:
         self.process: Optional[asyncio.subprocess.Process] = None
         self.last_used = 0
         self.is_ready = False
+    async def start_container_dev(self):
+        """Start persistent container for development"""
+        logger.info(f"Starting persistent container for development: {self.image}")
+        if self.process is not None:
+            logger.info("Container already running")
+            return  # Already running
         
+        cmd = [
+            "docker", "run",
+            "-it",  # Interactive (stdin open)
+            "--rm",  # Still cleanup on stop
+            "-e", f"MCP_GATEWAY={self.gateway_url}",
+            self.image,
+            "bash"
+        ]
+        
+        logger.info(f"Docker command: {' '.join(cmd)}")
+        self.process = await asyncio.create_subprocess_exec(
+            *cmd)
+        logger.info(f"Process created, PID: {self.process.pid}")
+        return self.process
+
     async def start_container(self):
         """Start persistent container"""
+
+        if os.environ.get("DEV_MODE") == "True":
+            return await self.start_container_dev()
+
         logger.info(f"Starting persistent container: {self.image}")
         if self.process is not None:
             logger.info("Container already running")

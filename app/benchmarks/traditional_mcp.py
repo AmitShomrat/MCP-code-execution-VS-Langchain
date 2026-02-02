@@ -91,6 +91,8 @@ class TraditionalMCPBenchmark:
                 - time: Total execution time
                 - llm_calls: List of LLM call details
                 - tokens: Token usage information
+                - conversation_history: Conversation history
+                - turn_details: Detailed turn information
         """
         # Reset token tracking for new benchmark run
         self.total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}

@@ -33,5 +33,7 @@ ENV PYTHONPATH=/opt/tools_client
 
 WORKDIR /workspace
 
+COPY test.py /workspace/test.py
+
 # Start execution server (not main.py anymore)
 CMD ["python", "-u", "/opt/execution_server.py"]

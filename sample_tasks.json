@@ -6,9 +6,10 @@
   },
   {
     "task_id": "task_2",
-    "user_query": "look in the database and return names that has access for door 'D' ",
-    "expected_behaviour": "Agent uses db_server.inspect_db to inspect the database schema and then uses db_server.query_db to get the names that has access for door 'D'",
-    "expected_output": "Names that has access for door 'D'"
+    "user_query": "Add user 'Leon' and grant access to door 'A'",
+    "expected_behaviour": "Agent uses db_server.add_user_record to add user 'Leon' and then uses db_server.grant_door_access to grant access to door 'A'",
+    "expected_output": "User 'Leon' added and access to door 'A' granted"
   }
+
 ]
 

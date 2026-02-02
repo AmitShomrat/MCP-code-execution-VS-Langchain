@@ -99,6 +99,8 @@ class RealMCPOrchestrator:
                 - time: Total execution time
                 - llm_calls: List of LLM call details
                 - tokens: Token usage information
+                - conversation_history: Conversation history
+                - turn_details: Detailed turn information
         """
         # Start timer for total execution time tracking
         total_start = time.time()

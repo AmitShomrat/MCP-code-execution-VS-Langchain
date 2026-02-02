@@ -4,6 +4,7 @@ FastAPI routes for MCP benchmark comparison dashboard.
 This module defines all API endpoints for running benchmarks,
 retrieving results, and serving the web interface.
 """
+import os
 from pathlib import Path
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -46,7 +47,7 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 80)
     logger.info("FastAPI Application Starting Up")
     logger.info("=" * 80)
-
+    logger.info(f"DEV_MODE: {os.getenv('DEV_MODE')}")
     # Initialize benchmark runner once - it will initialize both benchmark instances internally
     await benchmarkRunner.initialize_async()
 

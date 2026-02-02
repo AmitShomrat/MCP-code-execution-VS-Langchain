@@ -1,21 +1,23 @@
 from db_init import get_shared_db
-from threat_demo_server import LegitimateDBHandler, InfectedDBHandler
+from threat_demo_server import LegitimateDBHandler, PhaseIDBHandler, PhaseIIDBHandler
 from fastmcp import FastMCP
 
-def create_server(server_type: str = "legitimate") -> FastMCP:
+
+def create_server(server_type: str = "L") -> FastMCP:
     """Create a server with the given handler."""
     conn = get_shared_db()
     
-    if server_type == "legitimate" or server_type == "L":
+    if server_type == "L":
         handler = LegitimateDBHandler(conn)
         return handler.create_server()
 
-    elif server_type == "infected" or server_type == "I":
-        handler = InfectedDBHandler(conn)
+    elif server_type == "I":
+        handler = PhaseIDBHandler(conn)
         return handler.create_server()
         
-    elif server_type == "malicious" or server_type == "M":
-        pass # TODO: Implement malicious server
+    elif server_type == "II":
+        handler = PhaseIIDBHandler(conn)
+        return handler.create_server()
 
     else:
         raise ValueError(f"Invalid server type: {server_type}")

@@ -4,7 +4,7 @@ import asyncio
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-
+from mcp.types import CallToolResult
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
@@ -31,10 +31,6 @@ def extract_text(result: Any) -> Optional[str]:
     texts = [getattr(c, "text", "") for c in content if getattr(c, "text", None)]
     return "\n".join(texts) if texts else None
 
-# @app.lifespan("startup")
-# async def startup():
-#     mcp = get_mcp_client()
-#     await mcp.initialize()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,12 +62,28 @@ async def tools():
             })
     return {"tools": out}
 
-@app.post("/mcp/call", response_model=CallResp)
-async def call_tool(req: CallReq, x_sandbox_token: Optional[str] = Header(default=None)):
-    # Optional: simple shared-secret check for container -> host
-    # if x_sandbox_token != os.environ.get("SANDBOX_TOKEN"):
-    #     raise HTTPException(status_code=401, detail="bad token")
+# @app.post("/mcp/call", response_model=CallResp)
+# async def call_tool(req: CallReq):
+#     if "." not in req.name:
+#         raise HTTPException(status_code=400, detail="name must be '<server>.<tool>'")
 
+#     server, tool = req.name.split(".", 1)
+
+#     async def _call():
+#         return await _mcp_client.call_tool(server_name=server, tool_name=tool, arguments=req.args)
+
+#     try:
+#         result = await asyncio.wait_for(_call(), timeout=req.timeout_s)
+#         return CallResp(ok=True, result=None, content_text=extract_text(result))
+#     except asyncio.TimeoutError:
+#         return CallResp(ok=False, error=f"timeout after {req.timeout_s}s")
+#     except Exception as e:
+#         return CallResp(ok=False, error=str(e))
+
+
+
+@app.post("/mcp/call", response_model=CallToolResult)
+async def call_tool(req: CallReq):
     if "." not in req.name:
         raise HTTPException(status_code=400, detail="name must be '<server>.<tool>'")
 
@@ -82,8 +94,8 @@ async def call_tool(req: CallReq, x_sandbox_token: Optional[str] = Header(defaul
 
     try:
         result = await asyncio.wait_for(_call(), timeout=req.timeout_s)
-        return CallResp(ok=True, result=None, content_text=extract_text(result))
+        return result
     except asyncio.TimeoutError:
-        return CallResp(ok=False, error=f"timeout after {req.timeout_s}s")
+        return CallToolResult(is_error=True, error=f"timeout after {req.timeout_s}s")
     except Exception as e:
-        return CallResp(ok=False, error=str(e))
+        return CallToolResult(is_error=True, error=str(e))

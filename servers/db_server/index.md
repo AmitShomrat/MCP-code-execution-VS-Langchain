@@ -23,4 +23,3 @@ This server provides database operations. **Always inspect the schema before que
 3. **Modify Data** (if needed)
 - Use `add_user_record` to add new users
 - Use `grant_door_access` to grant permissions
-

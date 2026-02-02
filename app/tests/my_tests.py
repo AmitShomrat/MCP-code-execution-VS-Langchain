@@ -1,9 +1,25 @@
+import os, requests
+import sys
+import asyncio
+import json
+from typing import Any, Optional
+from pydantic import BaseModel
+import uvicorn
+
+# Add project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from app.core.mcp_client import get_mcp_client
+from custome_mcp_servers import reset_shared_db
+
+
 async def test_mcp_client():
     """
     Test MCP client initialization and list tools.
     """
-    from app.core.mcp_client import get_mcp_client
-    mcp_client = get_mcp_client()
+    mcp_client = await get_mcp_client()
     await mcp_client.initialize()
     tools = await mcp_client.list_tools("filesystem")
     print(f"list_tools:\n\n {tools} \n\n")
@@ -48,10 +64,84 @@ async def test_tmcp_benchmark_init_cleanup():
         # Cleanup in the SAME event loop
         await benchmark.cleanup_async()
 
+async def test_query_db_with_pydantic():
+    """
+    Test calling query_db tool with Pydantic object argument.
+    
+    When a tool expects a Pydantic object, the argument structure must match
+    the function parameter name. For query_db(request: QueryRequest), you need:
+    {"request": {"query": "...", "inverse": false}}
+    """
+    
+    mcp_client = await get_mcp_client()
+    
+    # CORRECT: When tool expects Pydantic object, wrap it in parameter name
+    # The function signature is: query_db(request: QueryRequest)
+    # So arguments must be: {"request": {"query": "...", "inverse": false}}
+    result = await mcp_client.call_tool(
+        server_name="db_server",
+        tool_name="query_db",
+        arguments={
+            "request": {
+                "query": "SELECT * FROM users",
+                "inverse": False  # Optional, defaults to False
+            }
+        }
+    )
+    print(result)
+    
+def extract_text(result: Any) -> Optional[str]:
+    content = getattr(result, "content", None)
+    if not content:
+        return None
+    texts = [getattr(c, "text", "") for c in content if getattr(c, "text", None)]
+    return "\n".join(texts) if texts else None
 
 
 
+async def test_add_user_record_and_grant_access_with_pydantic():
+    """
+    Test calling add_user_record tool with Pydantic object argument.
+    """
+    
+    mcp_client = await get_mcp_client()
+    result = await mcp_client.call_tool(
+        server_name="db_server",
+        tool_name="add_user_record",
+        arguments={
+            "user": {
+                "name": "Alma",
+                "role": "Co-Founder",
+                "pass_key": "P678371",
+            }
+        }
+    )
+    result = result
+    print(f"add_user_record result type: {type(result)} \n\n result: \n\n{result} \n\n")
+    
+    user = result.structuredContent.get("user")
+    print(f"user:\n\n {user} \n\n")
 
+    result_grant_access = await mcp_client.call_tool(
+        server_name="db_server",
+        tool_name="grant_door_access",
+        arguments={
+            "user": user,
+            "door": {
+                "code": "A",
+                "description": "Main Office"
+            }
+        }
+    )
+    print(f"grant_door_access results:\n\n {result_grant_access} \n\n")
+
+
+
+if __name__ == "__main__":
+    reset_shared_db()
+    # asyncio.run(test_query_db_with_pydantic())
+    asyncio.run(test_add_user_record_and_grant_access_with_pydantic())
+    # test_mcp_call_http()
 
 
 # Checking tools_bridge.py 

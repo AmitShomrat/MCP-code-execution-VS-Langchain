@@ -32,7 +32,7 @@ class MCPClient:
         
         # Store active sessions
         self.sessions = {}
-        #  Create stack to hold all async resources - Add MCP server process to stack, Add JSON-RPC session to stack 
+        # Create stack to hold all async resources - Add MCP server process to stack, Add JSON-RPC session to stack 
         self.exit_stack = AsyncExitStack()
         
         # Track if client is initialized
@@ -133,7 +133,7 @@ class MCPClient:
             
             # Step 1: Create server parameters
             # Packages the server launch configuration into an MCP SDK object.
-            #Launch the MCP server by running this command
+            # Launch the MCP server by running this command.
             server_params = StdioServerParameters(
                 command=command,
                 args=args,
@@ -343,17 +343,6 @@ class MCPClient:
         logger.info("All MCP connections closed")
 
 
-# # Global MCP client instance
-# _mcp_client_instance = None
-
-# def get_mcp_client(config_path: str = "mcp_config.json") -> MCPClient:
-#     """Get or create the global MCP client instance"""
-#     global _mcp_client_instance
-    
-#     if _mcp_client_instance is None:
-#         _mcp_client_instance = MCPClient(config_path)
-    
-#     return _mcp_client_instance
 
 async def get_mcp_client(config_path: str = MCP_CONFIG_PATH) -> MCPClient:
     """Get or create the global MCP client instance"""

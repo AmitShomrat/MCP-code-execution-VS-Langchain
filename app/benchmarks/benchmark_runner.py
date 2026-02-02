@@ -78,19 +78,8 @@ class BenchmarkRunner:
         logger.info(f"{'=' * 80}\n")
         
         # CRITICAL: Reset database ONCE at the start of each task
-        # This ensures both approaches start with a clean database state
-        logger.info("Resetting database to original state for new task...")
-        try:
-            reset_shared_db()
-            # Small delay to ensure file system sync and MCP server process detection
-            import asyncio
-            await asyncio.sleep(0.2)
-            logger.info("Database reset complete. Fresh database ready for benchmarks.\n")
-        except Exception as e:
-            logger.error(f"Error resetting database: {e}")
-            # Continue anyway - the reset might have partially succeeded
-            logger.warning("Continuing with benchmark despite reset error...\n")
-        
+        await self.reset_database()
+
         # Initialize result placeholders
         code_exec_result = None
         traditional_result = None
@@ -233,7 +222,22 @@ class BenchmarkRunner:
         
         logger.info(f"Loaded {len(tasks)} tasks from {file_path}")
         return tasks
-    
+
+    async def reset_database(self):
+        """Reset the database to original state."""
+        # This ensures both approaches start with a clean database state
+        logger.info("Resetting database to original state for new task...")
+        try:
+            reset_shared_db()
+            # Small delay to ensure file system sync and MCP server process detection
+            import asyncio
+            await asyncio.sleep(0.2)
+            logger.info("Database reset complete. Fresh database ready for benchmarks.\n")
+        except Exception as e:
+            logger.error(f"Error resetting database: {e}")
+            # Continue anyway - the reset might have partially succeeded
+            logger.warning("Continuing with benchmark despite reset error...\n")
+        
     def save_results(self, results: List[Dict[str, Any]], output_path: str):
         """
         Save benchmark results to a JSON file.
