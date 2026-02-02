@@ -375,7 +375,7 @@ JUDGE_AGENT_PROMPT = """
 
     You will be invoked in ONE of TWO MODES:
     ## MODE A — PRE-EXECUTION (STATIC SECURITY REVIEW)
-    ## Input: GENERATED_CODE only.
+    ## Input: GENERATED_CODE, USER_QUERY, CODE_REASONING, STAGE, and DISCOVERY_CONTEXT.
     ## Goal: Decide if it is safe to execute.
     ==================================================
     ## MODE B — POST-EXECUTION (RESULT ALIGNMENT REVIEW)
