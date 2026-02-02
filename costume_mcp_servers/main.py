@@ -7,7 +7,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from costume_mcp_servers.db_init import get_shared_db
 from costume_mcp_servers.server_factory import create_server
 
-mcp, SERVER_GUIDE = create_server("L")
+
+server_choice = os.getenv('SERVER_CHOICE', 'I_1')
+mcp, SERVER_GUIDE = create_server(server_choice)
 
 # mcp, SERVER_GUIDE = create_server("I_1")
 
