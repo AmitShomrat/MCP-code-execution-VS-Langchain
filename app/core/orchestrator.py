@@ -127,12 +127,30 @@ class RealMCPOrchestrator:
             if response is None:
                 return {"success": False, "output": "", "error": "Code generation failed"}
             
-            # Execute the generated code and log results
-            execution_result = await self._run_generated_code_and_log(llm_call_number, response)
+            # Check if code is empty (status="complete" with empty code means final answer in reasoning)
+            code = response.get("code", "").strip()
+            is_complete_with_empty_code = response["status"] == "complete" and (not code or code == "")
+            
+            # Execute the generated code only if it's not empty
+            if is_complete_with_empty_code:
+                # No code to execute, use empty execution result
+                execution_result = {
+                    "success": True,
+                    "output": "",
+                    "error": None
+                }
+                logger.info(f"\n{'=' * 80}\nSKIPPING CODE EXECUTION (status=complete, empty code)\n{'=' * 80}")
+                logger.info("Final answer will be taken from reasoning field")
+            else:
+                # Execute the generated code and log results
+                execution_result = await self._run_generated_code_and_log(llm_call_number, response)
             
             # Track execution output for final summarization
             if execution_result.get("output"):
                 execution_results.append(execution_result["output"])
+            elif execution_result.get("error"):
+                logger.warning(f"Execution failed in LLM call {llm_call_number}, but continuing...\n")
+                execution_results.append(execution_result["error"])
             
             # Calculate turn execution time
             turn_time = time.time() - turn_start
@@ -151,53 +169,45 @@ class RealMCPOrchestrator:
             # Check if task is complete (status="complete" means agent finished)
             if response["status"] == "complete":
                 logger.info("\nTask COMPLETE (status=complete)\n")
-                final_result = execution_result
+                # Create proper result dictionary with reasoning as output
+                final_result = {
+                    "success": True,
+                    "output": response.get("reasoning", ""),
+                    "error": None
+                }
                 break
             
-            # Log warning if execution failed but continue to next turn
-            if not execution_result['success']:
-                logger.warning(f"Execution failed in LLM call {llm_call_number}, but continuing...\n")
-        
         # Handle case where max turns reached without completion
         if final_result is None:
             logger.warning(f"\nMax turns ({max_turns}) reached")
-            final_result = execution_result
+            # execution_result is already a dict, use it directly
+            final_result = execution_result if isinstance(execution_result, dict) else {
+                "success": False,
+                "output": "",
+                "error": "Max turns reached without completion"
+            }
         
-        # Generate final formatted answer using LLM
-        final_answer = final_result.get("output", "")
-        final_answer_token_usage = {}
         
-        if execution_results and final_result.get("success", False):
-            try:
-                logger.info(f"\n\n{'=' * 80}\nGENERATING FINAL ANSWER\n{'=' * 80}\n")
-                summarization_result = await self.agent.generate_final_answer(
-                    user_query=user_query,
-                    execution_results=execution_results,
-                    conversation_history=messages
-                )
-                final_answer = summarization_result["answer"]
-                final_answer_token_usage = summarization_result["token_usage"]
-                
-                # Add summarization token usage to totals
-                token_usage_list.append(final_answer_token_usage)
-                
-                logger.info(f"\n{'=' * 80}\nFINAL ANSWER GENERATED SUCCESSFULLY\n{'=' * 80}\n")
-            except Exception as e:
-                logger.error(f"Error generating final answer: {e}")
-                logger.warning("Falling back to raw execution output")
-                # Keep original execution output if summarization fails
         
         # Calculate total execution time
         total_time = time.time() - total_start
         
         # Display final results summary (use original result for display, but return formatted answer)
+        # Ensure final_result is a dict
+        if not isinstance(final_result, dict):
+            final_result = {
+                "success": True,
+                "output": str(final_result),
+                "error": None
+            }
+        
         ResultLogger.display_final_results(final_result, turn_times, total_time, token_usage_list)
         
-        # Return formatted result dictionary with LLM-generated final answer
+        # Return formatted result dictionary
         return {
             "success": final_result.get("success", False),
-            "output": final_answer,  # Use LLM-formatted answer instead of raw output
-            "raw_output": final_result.get("output", ""),  # Keep raw output for reference
+            "output": final_result.get("output", ""),  # Final answer (from reasoning if complete, or execution output)
+            "raw_output": execution_results[-1] if execution_results else final_result.get("output", ""),  # Last execution output for reference
             "error": final_result.get("error"),
             "time": total_time,
             "llm_calls": self._format_llm_calls(turn_times, token_usage_list),
@@ -272,8 +282,11 @@ class RealMCPOrchestrator:
             execution_result: Results from code execution
             messages: Conversation history to update
         """
-        # Log continuation to next turn
-        logger.info("\nContinuing to next LLM call (status=exploring)...")
+        # Log based on status
+        if response["status"] == "complete":
+            logger.info("\nTask complete - final answer in reasoning field")
+        else:
+            logger.info("\nContinuing to next LLM call (status=exploring)...")
         
         # Create JSON string of assistant's response for conversation history
         assistant_message_json = json.dumps({
@@ -289,10 +302,19 @@ class RealMCPOrchestrator:
         })
         
         # Append execution result as user message to conversation history
-        messages.append({
-            "role": "user",
-            "content": f"Execution result:\n{execution_result['output']}"
-        })
+        # If code was empty (complete status), execution_result will have empty output
+        execution_output = execution_result.get('output', '')
+        if response["status"] == "complete" and not execution_output:
+            # For complete status with empty code, indicate final answer is in reasoning
+            messages.append({
+                "role": "user",
+                "content": "Task complete - final answer provided in reasoning"
+            })
+        else:
+            messages.append({
+                "role": "user",
+                "content": f"Execution result:\n{execution_output if execution_output else execution_result.get('error', '')}"
+            })
         
         # Log what was added to conversation history
         logger.info(f"\n{'=' * 80}\nADDED TO CONVERSATION HISTORY (Call {llm_call_number})\n{'=' * 80}\n\nAssistant Message (JSON added to history):\n{assistant_message_json}\n\nUser Message: Execution result ({len(execution_result['output'])} chars)\nTotal history size: {len(messages)} messages\n")

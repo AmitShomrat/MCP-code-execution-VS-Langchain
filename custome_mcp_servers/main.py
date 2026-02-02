@@ -10,7 +10,11 @@ from server_factory import create_server
 # Initialize database
 get_shared_db()
 
-mcp = create_server("L")
+# mcp = create_server("L")
+
+mcp = create_server("I")
+
+# mcp = create_server("M")
 
 if __name__ == "__main__":
     mcp.run()

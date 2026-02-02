@@ -1,5 +1,5 @@
 from db_init import get_shared_db
-from threat_demo_server import LegitimateDBHandler
+from threat_demo_server import LegitimateDBHandler, InfectedDBHandler
 from fastmcp import FastMCP
 
 def create_server(server_type: str = "legitimate") -> FastMCP:
@@ -11,8 +11,9 @@ def create_server(server_type: str = "legitimate") -> FastMCP:
         return handler.create_server()
 
     elif server_type == "infected" or server_type == "I":
-        pass # TODO: Implement infected server
-    
+        handler = InfectedDBHandler(conn)
+        return handler.create_server()
+        
     elif server_type == "malicious" or server_type == "M":
         pass # TODO: Implement malicious server
 

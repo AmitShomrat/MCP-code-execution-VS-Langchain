@@ -95,11 +95,37 @@ Before generating code, follow this decision process:
 - You must inspect a CSV structure before processing
 - You need to read tool documentation to understand arguments
 - You have not yet read the relevant tool documentation
+- You are still establishing the final answer.
 
 **Use status = "complete" when:**
-- The task is a direct file operation
-- You already know the tool interface from earlier turns
-- No schema or structure discovery is required
+- ALL tool operations have been executed and you have received their complete results
+- You have gathered ALL necessary information to answer the user's query fully
+- You are ready to provide the FINAL answer directly to the user (no more code execution needed)
+
+**CRITICAL: When status = "complete":**
+1. **Code MUST be empty**: Set `"code": ""` (empty string) - NO code will be executed
+2. **Reasoning MUST contain your final answer**: Put your complete, well-formatted final answer in the `reasoning` field
+3. **Final answer format**: 
+   - Address the user's query directly and completely
+   - Include all relevant information from execution results
+   - Format clearly (use bullet points, tables, sections as appropriate)
+   - Be professional and easy to read
+   - DO NOT include technical details about execution unless asked
+
+**Example of status="complete" response:**
+```json
+{
+    "status": "complete",
+    "code": "",
+    "reasoning": "There are **42 users** in the database.\n\nBreakdown:\n- Admins: 5\n- Regular users: 37"
+}
+```
+
+**⚠️ DO NOT use status="complete" if:**
+- You still need to call more tools
+- You haven't received execution results yet
+- You're missing information to answer the question
+- You're generating code to perform operations (that's "exploring")
 
 ### Step 3: Generate Code
 
@@ -166,27 +192,19 @@ main()
 ## RESPONSE FORMAT
 You MUST return **valid JSON only**:
 
+**When status="exploring":**
 {
-    "status": "exploring" | "complete",
-    "code": "<python code>",
-    "reasoning": "<brief explanation>"
+    "status": "exploring",
+    "code": "<executable python code>",
+    "reasoning": "<brief explanation of what this code does>"
 }
 
----
-
-## STATUS DEFINITIONS
-
-### status = "exploring"
-Use when:
-- Reading CSV structure (inspect_csv)
-- Reading tool documentation files
-- Discovering schema or parameters
-
-### status = "complete"
-Use when:
-- Executing the user’s task
-- Performing file operations
-- Producing final output
+**When status="complete":**
+{
+    "status": "complete",
+    "code": "",  // MUST be empty string - no code execution
+    "reasoning": "<YOUR COMPLETE FINAL ANSWER HERE - well formatted, ready for user>"
+}
 
 ---
 
@@ -209,10 +227,22 @@ Use when:
 - If you can use tool without read its documentation, then do not read it.
 
 ## CRITICAL EXECUTION RULES
-- NEVER return an empty "code" field.
-- If status="exploring", the code MUST perform the exploration step (e.g., read index.md or a tool doc) and print it.
-- If status="complete", the code MUST complete the user task.
+
+**For status="exploring":**
+- Code MUST NOT be empty - it must perform the exploration/tool operation
+- Code MUST print all results using print()
+- Code MUST be executable Python
+
+**For status="complete":**
+- Code MUST be empty string: `"code": ""`
+- Code execution will be SKIPPED by the orchestrator
+- Final answer MUST be in the `reasoning` field
+- Reasoning should be a complete, formatted answer ready for the user
+- Do NOT put code in the reasoning field
+
+**General Rules:**
 - **ALL results MUST be printed using print() - stdout redirection captures ONLY printed output. Variables or return values NOT printed are LOST.**
+- If you put executable code, it will run. If you put empty code with status="complete", your reasoning will be the answer.
 
 """
 

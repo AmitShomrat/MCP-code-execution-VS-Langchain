@@ -114,8 +114,10 @@ class TraditionalMCPBenchmark:
         )
         
 
-        # Initialize conversation history
-        self.conversation_history = []
+        # Initialize conversation history with user query
+        self.conversation_history = [
+            {"role": "user", "content": query}
+        ]
 
         try:
             # Invoke agent with user query
@@ -131,17 +133,69 @@ class TraditionalMCPBenchmark:
             
             # Process agent result messages
             if "messages" in result:
-                # Iterate through all messages in result
+                # Iterate through all messages in result to build complete conversation history
                 for msg in result["messages"]:
-                    # Check if message is from AI assistant
-                    if hasattr(msg, 'content') and msg.type == "ai":
-                        # Extract AI response content
-                        output = msg.content
-                        call_count += 1
+                    msg_type = getattr(msg, 'type', None) or getattr(msg, '__class__', {}).__name__.lower()
                     
-                        self.conversation_history.append({"role": "assistant" if msg.type == "ai" else "user",
-                                                          "content": output})
-
+                    # Extract content based on message type
+                    content = None
+                    role = None
+                    
+                    if hasattr(msg, 'content'):
+                        # For AI and Human messages, get content directly
+                        if msg_type in ["ai", "human"]:
+                            content = msg.content
+                            if isinstance(content, list):
+                                # Content might be a list of content blocks
+                                content = " ".join(str(c) for c in content)
+                            role = "assistant" if msg_type == "ai" else "user"
+                        elif msg_type == "tool":
+                            # Tool messages contain tool calls or tool results
+                            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                                # Tool call request - format nicely
+                                import json
+                                tool_calls_formatted = []
+                                for tc in msg.tool_calls:
+                                    tool_name = tc.get('name', 'unknown')
+                                    tool_args = tc.get('args', {})
+                                    tool_calls_formatted.append(
+                                        f"{tool_name}({json.dumps(tool_args)})"
+                                    )
+                                content = f"[Tool Call: {', '.join(tool_calls_formatted)}]"
+                                role = "tool"
+                            elif hasattr(msg, 'content') and msg.content:
+                                # Tool result
+                                tool_content = msg.content
+                                if isinstance(tool_content, list):
+                                    tool_content = " ".join(str(c) for c in tool_content)
+                                content = f"[Tool Result: {tool_content}]"
+                                role = "tool"
+                            else:
+                                # Empty tool message
+                                content = "[Tool executed - no result]"
+                                role = "tool"
+                    
+                    # Add all messages to conversation history (skip initial user message as it's already added)
+                    if content is not None and role is not None:
+                        # Only add if not duplicate of initial user message
+                        is_duplicate_user = (role == "user" and 
+                                           len(self.conversation_history) > 0 and 
+                                           self.conversation_history[-1].get("role") == "user" and
+                                           self.conversation_history[-1].get("content") == str(content))
+                        
+                        if not is_duplicate_user:
+                            self.conversation_history.append({
+                                "role": role,
+                                "content": str(content)
+                            })
+                    
+                    # Track AI messages for token usage and final output
+                    if msg_type == "ai":
+                        call_count += 1
+                        # Update output with latest AI message (final answer)
+                        if content:
+                            output = str(content)
+                        
                         # Check if message has token usage metadata
                         if hasattr(msg, 'response_metadata'):
                             token_usage = msg.response_metadata.get('token_usage', {})
@@ -271,12 +325,12 @@ class TraditionalMCPBenchmark:
     def _format_turn_details(self) -> list:
         """Format turn details from conversation history.
         
-        For Traditional MCP, the conversation includes AI messages, tool calls, and tool results.
-        We match these with LLM calls to create turn details.
+        For Traditional MCP, the conversation includes user messages, AI messages, tool calls, and tool results.
+        We group messages by LLM calls to create turn details where each AI message represents a turn.
         """
         turns = []
         
-        if not self.conversation_history:
+        if not self.conversation_history or not self.llm_calls_list:
             # No conversation history, return basic turn info
             for i, call_info in enumerate(self.llm_calls_list):
                 turns.append({
@@ -288,32 +342,75 @@ class TraditionalMCPBenchmark:
                 })
             return turns
         
-        # Match conversation messages with LLM calls
-        # For simplicity, distribute messages across LLM calls
-        messages_per_call = max(1, len(self.conversation_history) // max(1, len(self.llm_calls_list)))
+        # Find indices of all AI (assistant) messages - these mark the turns
+        ai_indices = [i for i, msg in enumerate(self.conversation_history) if msg.get("role") == "assistant"]
         
-        for i, call_info in enumerate(self.llm_calls_list):
-            start_idx = i * messages_per_call
-            end_idx = min(start_idx + messages_per_call, len(self.conversation_history))
+        # Create a turn for each LLM call
+        for turn_num, call_info in enumerate(self.llm_calls_list, 1):
+            if turn_num - 1 < len(ai_indices):
+                ai_idx = ai_indices[turn_num - 1]
+                
+                # Collect all messages leading up to this AI response (the "request")
+                request_messages = []
+                for i in range(ai_idx):
+                    msg = self.conversation_history[i]
+                    # Include user messages and tool results in the request context
+                    if msg.get("role") in ["user", "tool"]:
+                        request_messages.append(msg)
+                
+                # Get the AI response
+                ai_response_msg = self.conversation_history[ai_idx]
+                
+                # Collect tool interactions after this AI response (before next turn)
+                tool_interactions = []
+                if turn_num < len(ai_indices):
+                    # Get messages between this AI response and next AI response
+                    for i in range(ai_idx + 1, ai_indices[turn_num]):
+                        msg = self.conversation_history[i]
+                        if msg.get("role") == "tool":
+                            tool_interactions.append(msg.get("content", ""))
+                else:
+                    # Last turn - get all remaining messages
+                    for i in range(ai_idx + 1, len(self.conversation_history)):
+                        msg = self.conversation_history[i]
+                        if msg.get("role") == "tool":
+                            tool_interactions.append(msg.get("content", ""))
+                
+                # Build the request content from collected messages
+                request_content_parts = []
+                for msg in request_messages:
+                    if msg.get("role") == "user":
+                        request_content_parts.append(msg.get("content", ""))
+                    elif msg.get("role") == "tool":
+                        request_content_parts.append(msg.get("content", ""))
+                
+                turn = {
+                    "turn_number": turn_num,
+                    "llm_request": {
+                        "role": "user",
+                        "content": "\n\n".join(request_content_parts) if request_content_parts else "Processing query..."
+                    },
+                    "llm_response": {
+                        "role": "assistant",
+                        "content": ai_response_msg.get("content", "")
+                    },
+                    "tool_interactions": tool_interactions if tool_interactions else None,
+                    "latency": call_info.get("latency", 0),
+                    "tokens": call_info.get("tokens", {})
+                }
+            else:
+                # Fallback if indices don't match
+                turn = {
+                    "turn_number": turn_num,
+                    "llm_request": {"role": "user", "content": "Query processing..."},
+                    "llm_response": {"role": "assistant", "content": "Processing..."},
+                    "latency": call_info.get("latency", 0),
+                    "tokens": call_info.get("tokens", {})
+                }
             
-            # Get messages for this turn
-            turn_messages = self.conversation_history[start_idx:end_idx]
-            
-            # Separate into request and response
-            request_msgs = [msg for msg in turn_messages if msg.get("role") in ["user", "system"]]
-            response_msgs = [msg for msg in turn_messages if msg.get("role") == "assistant"]
-            
-            turn = {
-                "turn_number": i + 1,
-                "llm_request": request_msgs[0] if request_msgs else {"role": "user", "content": "Query processing..."},
-                "llm_response": response_msgs[0] if response_msgs else turn_messages[0] if turn_messages else {"role": "assistant", "content": "Processing..."},
-                "latency": call_info.get("latency", 0),
-                "tokens": call_info.get("tokens", {})
-            }
             turns.append(turn)
         
         return turns
-
 
     async def cleanup_async(self):
         """
