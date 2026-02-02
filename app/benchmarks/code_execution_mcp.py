@@ -36,7 +36,7 @@ class CodeExecutionBenchmark:
             mcp_config_path: Path to MCP configuration file (optional)
         """
         # Create orchestrator instance with optional config path
-        self.orchestrator = RealMCPOrchestrator()
+        self._orchestrator = RealMCPOrchestrator()
         
         # Log initialization
         logger.info("Code Execution MCP Benchmark initialized")
@@ -54,7 +54,7 @@ class CodeExecutionBenchmark:
         logger.info("Initializing Code Execution MCP Benchmark")
         
         # Initialize the orchestrator
-        await self.orchestrator.initialize_async()
+        await self._orchestrator.initialize_async()
 
     
     async def run_benchmark_async(self, query: str, max_turns: int = 3) -> Dict[str, Any]:
@@ -83,7 +83,7 @@ class CodeExecutionBenchmark:
         logger.info(f"Running Code Execution MCP benchmark for query: {query}")
         
         # Run multi-turn conversation through orchestrator
-        result = await self.orchestrator.run_multi_turn_async(
+        result = await self._orchestrator.run_multi_turn_async(
             user_query=query,
             max_turns=max_turns
         )
@@ -105,4 +105,4 @@ class CodeExecutionBenchmark:
         logger.info("Cleaning up Code Execution MCP Benchmark")
         
         # Signal orchestrator that task is complete (doesn't close shared resources)
-        await self.orchestrator.cleanup_async()
+        await self._orchestrator.cleanup_async()
