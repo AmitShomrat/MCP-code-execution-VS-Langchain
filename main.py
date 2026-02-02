@@ -72,3 +72,9 @@ async def main(routes_port=8000, gateway_port=8080, dev_mode: bool = False):
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+    # We have to unpack then to tag sensetive fields. (immutable object)
+    # Then the given privileges to the a third party Analysis.
+
+    

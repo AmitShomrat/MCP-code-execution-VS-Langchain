@@ -13,7 +13,7 @@ from pathlib import Path
 from app.benchmarks.code_execution_mcp import CodeExecutionBenchmark
 from app.benchmarks.traditional_mcp import TraditionalMCPBenchmark
 from app.app_logging.logger import setup_logger
-from custome_mcp_servers import reset_shared_db
+from costume_mcp_servers import reset_shared_db
 
 logger = setup_logger(__name__)
 

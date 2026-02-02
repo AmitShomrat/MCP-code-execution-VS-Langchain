@@ -4,7 +4,22 @@ Move or rename files and directories. Can move files between directories and ren
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'source': {'type': 'string'}, 'destination': {'type': 'string'}}, 'required': ['source', 'destination']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string"
+    },
+    "destination": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "destination"
+  ]
+}
 ```
 
 ## Example Usage

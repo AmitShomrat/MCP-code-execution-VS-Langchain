@@ -4,7 +4,18 @@ Create a new directory or ensure a directory exists. Can create multiple nested 
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "path"
+  ]
+}
 ```
 
 ## Example Usage

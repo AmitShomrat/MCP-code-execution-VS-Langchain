@@ -23,7 +23,7 @@
         "fastmcp",
         "run",
         "--no-banner",
-        "/Users/amitshomrat/Projects/AI_Code_Execution_with_MCP/custome_mcp_servers/main.py:mcp"
+        "/Users/amitshomrat/Projects/AI_Code_Execution_with_MCP/costume_mcp_servers/main.py:mcp"
       ]
     }
   }

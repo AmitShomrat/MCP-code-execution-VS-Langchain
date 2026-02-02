@@ -4,7 +4,11 @@ Returns the list of directories that this server is allowed to access. Subdirect
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {}}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {}
+}
 ```
 
 ## Example Usage

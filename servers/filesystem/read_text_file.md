@@ -4,7 +4,26 @@ Read the complete contents of a file from the file system as text. Handles vario
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'path': {'type': 'string'}, 'tail': {'description': 'If provided, returns only the last N lines of the file', 'type': 'number'}, 'head': {'description': 'If provided, returns only the first N lines of the file', 'type': 'number'}}, 'required': ['path']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string"
+    },
+    "tail": {
+      "description": "If provided, returns only the last N lines of the file",
+      "type": "number"
+    },
+    "head": {
+      "description": "If provided, returns only the first N lines of the file",
+      "type": "number"
+    }
+  },
+  "required": [
+    "path"
+  ]
+}
 ```
 
 ## Example Usage

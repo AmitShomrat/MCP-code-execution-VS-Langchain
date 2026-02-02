@@ -95,6 +95,7 @@ async def call_tool(req: CallReq):
     try:
         result = await asyncio.wait_for(_call(), timeout=req.timeout_s)
         return result
+        
     except asyncio.TimeoutError:
         return CallToolResult(is_error=True, error=f"timeout after {req.timeout_s}s")
     except Exception as e:

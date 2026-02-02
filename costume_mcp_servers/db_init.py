@@ -66,26 +66,23 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
     cursor.executescript("""
         -- Users table (Name, Role, Pass_Key)
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             role TEXT NOT NULL,
-            pass_key TEXT NOT NULL UNIQUE
+            pass_key TEXT NOT NULL PRIMARY KEY
         );
         
         -- Doors table
         CREATE TABLE IF NOT EXISTS doors (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            door_code TEXT NOT NULL UNIQUE,
+            door_code TEXT NOT NULL PRIMARY KEY,
             description TEXT
         );
         
         -- Door-PassKey mapping (which passkeys open which doors)
         CREATE TABLE IF NOT EXISTS door_passkeys (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            door_id INTEGER NOT NULL,
+            door_code TEXT NOT NULL,
             pass_key TEXT NOT NULL,
-            FOREIGN KEY (door_id) REFERENCES doors(id),
-            UNIQUE(door_id, pass_key)
+            FOREIGN KEY (door_code) REFERENCES doors(door_code),
+            PRIMARY KEY (door_code, pass_key)
         );
     """)
     
@@ -114,45 +111,44 @@ def init_database(db_path: str = None) -> sqlite3.Connection:
         ]
     )
     
-    # Door-PassKey mappings
-    # Door A opens with P578655 (Bjorn) OR P123456 (Sarah)
+    
     cursor.executemany(
-        "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
         [
-            (1, 'P578655'),  # Door A (main office) accepts Bjorn's passkey
-            (4, 'P578655'),  # Door D (lab) accepts Bjorn's passkey
-            (1, 'P123456')   # Door A also accepts Sarah's passkey
+            ('A', 'P578655'),  # Door A (main office) accepts Bjorn's passkey
+            ('D', 'P578655'),  # Door D (lab) accepts Bjorn's passkey
+            ('A', 'P123456')   # Door A also accepts Sarah's passkey
         ]
     )
     
-    # Door B opens with P666666 (Amit) OR P789012 (John)
+    
     cursor.executemany(
-        "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
         [
-            (2, 'P370425'),  # Door B accepts Amit's passkey
-            (2, 'P789012')  # Door B also accepts John's passkey
+            ('B', 'P370425'),  # Door B accepts Amit's passkey
+            ('B', 'P789012')  # Door B also accepts John's passkey
         ]
     )
     
-    # Door C opens with P345678 (Emma)
+
     cursor.execute(
-        "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
-        (3, 'P345678')
+        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        ('C', 'P345678') # Door C accepts Emma's passkey
     )
     
-    # Door D opens with P123456 (Sarah) OR P789012 (John)
+
     cursor.executemany(
-        "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
         [
-            (4, 'P123456'),  # Door D accepts Sarah's passkey
-            (4, 'P789012')  # Door D also accepts John's passkey
+            ('D', 'P123456'),  # Door D accepts Sarah's passkey
+            ('D', 'P789012')  # Door D also accepts John's passkey
         ]
     )
     
     # Door E opens with P345678 (Emma)
     cursor.execute(
-        "INSERT OR IGNORE INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
-        (5, 'P345678')
+        "INSERT OR IGNORE INTO door_passkeys (door_code, pass_key) VALUES (?, ?)",
+        ('E', 'P345678')
     )
     
     conn.commit()
@@ -395,7 +391,6 @@ def reset_shared_db():
     
     print(f"Database reset complete. File mtime: {_db_file_mtime}")
     return _db_conn
-
 
 
 def _cleanup_db_files(db_path: str):

@@ -12,7 +12,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from app.app_logging.logger import setup_logger
 from app.config import MCP_CONFIG_PATH
-from custome_mcp_servers import SERVER_GUIDE
+from costume_mcp_servers import SERVER_GUIDE
 
 # Setup logger
 logger = setup_logger(__name__)
@@ -268,7 +268,7 @@ class MCPClient:
                     "",
                     "## Input Schema",
                     "```json",
-                    str(input_schema) if input_schema else "{}",
+                    str(json.dumps(input_schema, indent=2)) if input_schema else "{}",
                     "```",
                     "",
                     "## Example Usage",

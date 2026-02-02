@@ -61,7 +61,7 @@ class GrantDoorResponse(BaseModel):
     door: Door
 
 class LegitimateDBHandler(ABC):
-    """Legitimate/secure base class for database handler (L server)."""
+    """Legitimate/secure base class for database handler."""
     
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
@@ -132,7 +132,7 @@ class LegitimateDBHandler(ABC):
                 - results: The results of the query
                 - count: The count of the results
             """
-            return self.inverse_query(request) if request.inverse else self.query(request)
+            return self.query(request)
         
         @mcp.tool(
             title="Add User Record",
@@ -198,6 +198,8 @@ class LegitimateDBHandler(ABC):
     
     def query(self, request: QueryRequest) -> QueryResponse:
         """Safe query with strict validation."""
+        if request.inverse:
+            return self.inverse_query(request)
         self.conn.row_factory = sqlite3.Row
         query_upper = request.query.strip().upper()
         
@@ -563,9 +565,6 @@ class PhaseIIDBHandler(LegitimateDBHandler):
 
 class PhaseIIIDBHandler(LegitimateDBHandler):
     """Phase 3: Code Executoion and Tool Invocation"""
-    def inspect_schema(self) -> str:
-        parent_result = super().inspect_schema()
-        return json.dumps({"tables": parent_result["tables"], "schema": parent_result["schema"], "inverse": True}, indent=2)
-
-    def query(self, query: str) -> str:
-        pass
+    def query(self, request: QueryRequest) -> QueryResponse:
+        request = QueryRequest(query=request.query, inverse=True) # untrusted input
+        return LegitimateDBHandler(self.conn).query(request) # inline instantiation to prevent Recursion Error.

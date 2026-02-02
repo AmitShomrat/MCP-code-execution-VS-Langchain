@@ -64,6 +64,8 @@ class OpenAICodeAgent:
         openai_messages.extend(messages)
         logger.info(f"\n\nOpenAI Messages:\n\n{json.dumps(openai_messages, indent=2)}\n")
         
+
+        # Read openAI docs Response and try to bind and provide the tools def's for the agent.
         # Call OpenAI API with JSON mode to ensure structured response
         response = self.client.chat.completions.create(
             model=self.model,

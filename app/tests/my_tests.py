@@ -12,7 +12,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from app.core.mcp_client import get_mcp_client
-from custome_mcp_servers import reset_shared_db
+from costume_mcp_servers import reset_shared_db
 
 
 async def test_mcp_client():

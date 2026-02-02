@@ -4,7 +4,10 @@ Safely inspects the database schema and structure
 
 ## Input Schema
 ```json
-{'properties': {}, 'type': 'object'}
+{
+  "properties": {},
+  "type": "object"
+}
 ```
 
 ## Example Usage

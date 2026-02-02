@@ -4,7 +4,23 @@ Read the contents of multiple files simultaneously. This is more efficient than 
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'paths': {'minItems': 1, 'type': 'array', 'items': {'type': 'string'}, 'description': 'Array of file paths to read. Each path must be a string pointing to a valid file within allowed directories.'}}, 'required': ['paths']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "paths": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of file paths to read. Each path must be a string pointing to a valid file within allowed directories."
+    }
+  },
+  "required": [
+    "paths"
+  ]
+}
 ```
 
 ## Example Usage

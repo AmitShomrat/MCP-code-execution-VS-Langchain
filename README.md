@@ -152,7 +152,7 @@ Code_Execution_MCP_17_Nov/
 │   ├── execution_server.py    # Persistent code execution server
 │   └── mcp_gateway_server.py  # HTTP gateway for MCP tool calls
 │
-├── custome_mcp_servers/        # Custom MCP server implementations
+├── costume_mcp_servers/        # Costume MCP server implementations
 │   ├── threat_demo_server.py  # Database handler implementations
 │   ├── server_factory.py      # Server factory for creating servers
 │   └── db_init.py             # Database initialization

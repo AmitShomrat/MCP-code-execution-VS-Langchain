@@ -4,7 +4,34 @@ Executes safe SQL queries on the database. Only SELECT queries are allowed.
 
 ## Input Schema
 ```json
-{'$defs': {'QueryRequest': {'properties': {'query': {'type': 'string'}, 'inverse': {'default': False, 'type': 'boolean'}}, 'required': ['query'], 'type': 'object'}}, 'properties': {'request': {'$ref': '#/$defs/QueryRequest'}}, 'required': ['request'], 'type': 'object'}
+{
+  "$defs": {
+    "QueryRequest": {
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "inverse": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "request": {
+      "$ref": "#/$defs/QueryRequest"
+    }
+  },
+  "required": [
+    "request"
+  ],
+  "type": "object"
+}
 ```
 
 ## Example Usage

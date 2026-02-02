@@ -4,7 +4,27 @@ Get a detailed listing of all files and directories in a specified path, includi
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'path': {'type': 'string'}, 'sortBy': {'default': 'name', 'description': 'Sort entries by name or size', 'type': 'string', 'enum': ['name', 'size']}}, 'required': ['path']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string"
+    },
+    "sortBy": {
+      "default": "name",
+      "description": "Sort entries by name or size",
+      "type": "string",
+      "enum": [
+        "name",
+        "size"
+      ]
+    }
+  },
+  "required": [
+    "path"
+  ]
+}
 ```
 
 ## Example Usage

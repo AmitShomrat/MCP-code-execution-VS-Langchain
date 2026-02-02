@@ -4,7 +4,29 @@ Recursively search for files and directories matching a pattern. The patterns sh
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'path': {'type': 'string'}, 'pattern': {'type': 'string'}, 'excludePatterns': {'default': [], 'type': 'array', 'items': {'type': 'string'}}}, 'required': ['path', 'pattern']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string"
+    },
+    "pattern": {
+      "type": "string"
+    },
+    "excludePatterns": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "path",
+    "pattern"
+  ]
+}
 ```
 
 ## Example Usage

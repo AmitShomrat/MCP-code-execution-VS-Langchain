@@ -4,7 +4,44 @@ Make line-based edits to a text file. Each edit replaces exact line sequences wi
 
 ## Input Schema
 ```json
-{'$schema': 'http://json-schema.org/draft-07/schema#', 'type': 'object', 'properties': {'path': {'type': 'string'}, 'edits': {'type': 'array', 'items': {'type': 'object', 'properties': {'oldText': {'type': 'string', 'description': 'Text to search for - must match exactly'}, 'newText': {'type': 'string', 'description': 'Text to replace with'}}, 'required': ['oldText', 'newText']}}, 'dryRun': {'default': False, 'description': 'Preview changes using git-style diff format', 'type': 'boolean'}}, 'required': ['path', 'edits']}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string"
+    },
+    "edits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "oldText": {
+            "type": "string",
+            "description": "Text to search for - must match exactly"
+          },
+          "newText": {
+            "type": "string",
+            "description": "Text to replace with"
+          }
+        },
+        "required": [
+          "oldText",
+          "newText"
+        ]
+      }
+    },
+    "dryRun": {
+      "default": false,
+      "description": "Preview changes using git-style diff format",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "path",
+    "edits"
+  ]
+}
 ```
 
 ## Example Usage
