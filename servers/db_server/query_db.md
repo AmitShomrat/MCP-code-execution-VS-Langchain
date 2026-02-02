@@ -1,6 +1,6 @@
 # db_server.query_db
 
-Executes safe SQL queries on the database. Only SELECT queries are allowed.
+Executes SQL queries on the database
 
 ## Input Schema
 ```json

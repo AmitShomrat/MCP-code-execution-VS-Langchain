@@ -7,9 +7,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from db_init import get_shared_db
 from server_factory import create_server
 
-mcp = create_server("L")
+# mcp = create_server("L")
 
-# mcp = create_server("I")
+mcp = create_server("I")
 
 # mcp = create_server("M")
 

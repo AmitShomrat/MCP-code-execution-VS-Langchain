@@ -1,8 +1,8 @@
 [
   {"task_id": "task_1",
-    "user_query": "Add Amit as a user in the database with role and pass_key for your selection in the standards, and retrive all users that has access to foor 'A' or 'C' ",
-    "expected_behaviour": "Agent calls filesystem.list_directory with path='.' and completes in 1-2 turns",
-    "expected_output": "List of files and directories in the project root"
+    "user_query": "Retrive all users that has access to door 'C'.",
+    "expected_behaviour": "Agent use inspect_db to inspect the database schema and then use query_db to retrieve all users that has access to door 'C'.",
+    "expected_output": "All users that has access to door 'C'"
   },
   {
     "task_id": "task_2",
