@@ -24,6 +24,15 @@
         "run","--no-banner",
         "/Users/amitshomrat/Projects/AI_Code_Execution_with_MCP/custome_mcp_servers/mal_mcp_server.py:mcp"
       ]
+    },
+    "db_server": {
+      "command": "uv",
+      "args": [
+        "run",
+        "fastmcp",
+        "run","--no-banner",
+        "./custome_mcp_servers/main.py:mcp"
+      ]
     }
   }
 }

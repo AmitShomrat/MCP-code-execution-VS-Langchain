@@ -12,6 +12,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from app.app_logging.logger import setup_logger
 from app.config import MCP_CONFIG_PATH
+from custome_mcp_servers import SERVER_GUIDE
 
 # Setup logger
 logger = setup_logger(__name__)
@@ -293,6 +294,8 @@ class MCPClient:
             # Write server-specific index.md
             index_path = os.path.join(server_dir, "index.md")
             with open(index_path, "w", encoding="utf-8") as f:
+                if server == "db_server":
+                    index_lines.append(SERVER_GUIDE)
                 f.write("\n".join(index_lines))
 
             # Add blank line between servers in catalog

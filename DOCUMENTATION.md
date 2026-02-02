@@ -1951,6 +1951,21 @@ if len(data) == 0:  # EOF!
 ```
 
 ---
+### Cursors basics
+#### Inline edit selection:
+use ``` Cmd + k ``` to describe the lines of code (functions, classes etc) and press ```Enter``` to applay the suggested code.
+
+#### Chat with Agent 
+``` Cmd + I ``` opens the chat panel.
+
+#### Write a rule
+1. open the command palette: ```Cmd Shift P ```
+2. Search: "New Cursor Rule"
+3. Name it (e.g., style-guide)
+4. Select Rule Type "Always"
+5. Define your style: Prefer using camelCase for variable names
+ 
+---
 
 ## Support
 
@@ -1964,4 +1979,5 @@ For issues or questions, check:
 **Last Updated:** January 5, 2026
 
 **Version:** 2.0
+
 

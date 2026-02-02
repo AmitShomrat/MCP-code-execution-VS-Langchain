@@ -113,6 +113,7 @@ class RealMCPOrchestrator:
         final_result = None
         turn_times = []
         token_usage_list = []
+        execution_results = []  # Track all execution outputs for final summarization
         
         # Multi-turn loop: iterate up to max_turns times
         for llm_call_number in range(1, max_turns + 1):
@@ -128,6 +129,10 @@ class RealMCPOrchestrator:
             
             # Execute the generated code and log results
             execution_result = await self._run_generated_code_and_log(llm_call_number, response)
+            
+            # Track execution output for final summarization
+            if execution_result.get("output"):
+                execution_results.append(execution_result["output"])
             
             # Calculate turn execution time
             turn_time = time.time() - turn_start
@@ -158,21 +163,46 @@ class RealMCPOrchestrator:
             logger.warning(f"\nMax turns ({max_turns}) reached")
             final_result = execution_result
         
+        # Generate final formatted answer using LLM
+        final_answer = final_result.get("output", "")
+        final_answer_token_usage = {}
+        
+        if execution_results and final_result.get("success", False):
+            try:
+                logger.info(f"\n\n{'=' * 80}\nGENERATING FINAL ANSWER\n{'=' * 80}\n")
+                summarization_result = await self.agent.generate_final_answer(
+                    user_query=user_query,
+                    execution_results=execution_results,
+                    conversation_history=messages
+                )
+                final_answer = summarization_result["answer"]
+                final_answer_token_usage = summarization_result["token_usage"]
+                
+                # Add summarization token usage to totals
+                token_usage_list.append(final_answer_token_usage)
+                
+                logger.info(f"\n{'=' * 80}\nFINAL ANSWER GENERATED SUCCESSFULLY\n{'=' * 80}\n")
+            except Exception as e:
+                logger.error(f"Error generating final answer: {e}")
+                logger.warning("Falling back to raw execution output")
+                # Keep original execution output if summarization fails
+        
         # Calculate total execution time
         total_time = time.time() - total_start
         
-        # Display final results summary
+        # Display final results summary (use original result for display, but return formatted answer)
         ResultLogger.display_final_results(final_result, turn_times, total_time, token_usage_list)
         
-        # Return formatted result dictionary
+        # Return formatted result dictionary with LLM-generated final answer
         return {
             "success": final_result.get("success", False),
-            "output": final_result.get("output", ""),
+            "output": final_answer,  # Use LLM-formatted answer instead of raw output
+            "raw_output": final_result.get("output", ""),  # Keep raw output for reference
             "error": final_result.get("error"),
             "time": total_time,
             "llm_calls": self._format_llm_calls(turn_times, token_usage_list),
             "tokens": self._calculate_total_tokens(token_usage_list),
-            "conversation_history":messages, 
+            "conversation_history": messages,
             "turn_details": self._format_turn_details(messages, turn_times, token_usage_list)
         }
     

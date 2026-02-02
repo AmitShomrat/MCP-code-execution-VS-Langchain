@@ -116,5 +116,135 @@
         "total_tokens": 4795
       }
     }
+  },
+  {
+    "timestamp": "2026-01-05T20:20:54.880020",
+    "query": "hello",
+    "result": {
+      "success": true,
+      "output": "Hi there! How can I assist you today?",
+      "time": 1.7611560821533203,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 1.76,
+          "tokens": {
+            "prompt_tokens": 2174,
+            "completion_tokens": 11,
+            "total_tokens": 2185
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2174,
+        "completion_tokens": 11,
+        "total_tokens": 2185
+      },
+      "conversation_history": [
+        {
+          "role": "assistant",
+          "content": "Hi there! How can I assist you today?"
+        }
+      ],
+      "turn_details": [
+        {
+          "turn_number": 1,
+          "llm_request": {
+            "role": "user",
+            "content": "Query processing..."
+          },
+          "llm_response": {
+            "role": "assistant",
+            "content": "Hi there! How can I assist you today?"
+          },
+          "latency": 1.76,
+          "tokens": {
+            "prompt_tokens": 2174,
+            "completion_tokens": 11,
+            "total_tokens": 2185
+          }
+        }
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-01-05T20:21:33.992731",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "Here is the list of items in the current directory:\n\n- Files:\n  - .DS_Store\n  - .dockerignore\n  - .env\n  - .gitignore\n  - .python-version\n  - DOCUMENTATION.md\n  - README.md\n  - Sales_Records.csv\n  - launcher.py\n  - main.py\n  - mcp_config.json\n  - pyproject.toml\n  - sample_tasks.json\n  - test_case.txt\n  - tools_bridge.py\n  - uv.lock\n\n- Directories:\n  - .git\n  - .venv\n  - __pycache__\n  - app\n  - custome_mcp_servers\n  - data\n  - docker\n  - docker_code\n  - logs\n  - servers\n  - static",
+      "time": 7.046736240386963,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 3.52,
+          "tokens": {
+            "prompt_tokens": 2176,
+            "completion_tokens": 23,
+            "total_tokens": 2199
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 3.52,
+          "tokens": {
+            "prompt_tokens": 2383,
+            "completion_tokens": 167,
+            "total_tokens": 2550
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4559,
+        "completion_tokens": 190,
+        "total_tokens": 4749
+      },
+      "conversation_history": [
+        {
+          "role": "assistant",
+          "content": ""
+        },
+        {
+          "role": "assistant",
+          "content": "Here is the list of items in the current directory:\n\n- Files:\n  - .DS_Store\n  - .dockerignore\n  - .env\n  - .gitignore\n  - .python-version\n  - DOCUMENTATION.md\n  - README.md\n  - Sales_Records.csv\n  - launcher.py\n  - main.py\n  - mcp_config.json\n  - pyproject.toml\n  - sample_tasks.json\n  - test_case.txt\n  - tools_bridge.py\n  - uv.lock\n\n- Directories:\n  - .git\n  - .venv\n  - __pycache__\n  - app\n  - custome_mcp_servers\n  - data\n  - docker\n  - docker_code\n  - logs\n  - servers\n  - static"
+        }
+      ],
+      "turn_details": [
+        {
+          "turn_number": 1,
+          "llm_request": {
+            "role": "user",
+            "content": "Query processing..."
+          },
+          "llm_response": {
+            "role": "assistant",
+            "content": ""
+          },
+          "latency": 3.52,
+          "tokens": {
+            "prompt_tokens": 2176,
+            "completion_tokens": 23,
+            "total_tokens": 2199
+          }
+        },
+        {
+          "turn_number": 2,
+          "llm_request": {
+            "role": "user",
+            "content": "Query processing..."
+          },
+          "llm_response": {
+            "role": "assistant",
+            "content": "Here is the list of items in the current directory:\n\n- Files:\n  - .DS_Store\n  - .dockerignore\n  - .env\n  - .gitignore\n  - .python-version\n  - DOCUMENTATION.md\n  - README.md\n  - Sales_Records.csv\n  - launcher.py\n  - main.py\n  - mcp_config.json\n  - pyproject.toml\n  - sample_tasks.json\n  - test_case.txt\n  - tools_bridge.py\n  - uv.lock\n\n- Directories:\n  - .git\n  - .venv\n  - __pycache__\n  - app\n  - custome_mcp_servers\n  - data\n  - docker\n  - docker_code\n  - logs\n  - servers\n  - static"
+          },
+          "latency": 3.52,
+          "tokens": {
+            "prompt_tokens": 2383,
+            "completion_tokens": 167,
+            "total_tokens": 2550
+          }
+        }
+      ]
+    }
   }
 ]

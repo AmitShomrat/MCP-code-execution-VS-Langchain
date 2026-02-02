@@ -3,12 +3,12 @@ OpenAI Agent for discovering tools from real MCP servers and generating code
 Uses official MCP protocol to discover and interact with MCP servers
 """
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 from openai import OpenAI
 
 from app.app_logging.logger import setup_logger
-from app.prompts import AGENT_PROMPT
+from app.prompts import AGENT_PROMPT, SUMMARIZATION_PROMPT
 from app.config import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
@@ -93,3 +93,80 @@ class OpenAICodeAgent:
         }
         
         return result
+
+    async def generate_final_answer(
+        self,
+        user_query: str,
+        execution_results: List[str],
+        conversation_history: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """
+        Generate a clean, well-formatted final answer from code execution results.
+        
+        This method analyzes all execution results and provides a final answer
+        that is clean, well-formatted, and directly addresses the user's query.
+        
+        Args:
+            user_query: The original user query
+            execution_results: List of execution output strings from all turns
+            conversation_history: Full conversation history for context
+            
+        Returns:
+            Dictionary with:
+                - answer: Clean, formatted final answer
+                - token_usage: Token usage information
+        """
+        # Compile all execution results into a single context
+        results_text = "\n\n---\n\n".join([
+            f"Execution Result {i+1}:\n{result}" 
+            for i, result in enumerate(execution_results)
+        ])
+        
+        # Create messages for summarization
+        messages = [
+            {
+                "role": "system",
+                "content": SUMMARIZATION_PROMPT
+            },
+            {
+                "role": "user",
+                "content": f"""Original User Query:
+{user_query}
+
+Code Execution Results:
+{results_text}
+
+Please provide a clean, well-formatted final answer to the user's query based on the execution results above."""
+            }
+        ]
+        
+        logger.info(f"\n\n{'=' * 80}\nFINAL ANSWER GENERATION\n{'=' * 80}\n")
+        logger.info(f"Generating final answer for query: {user_query}")
+        logger.info(f"Analyzing {len(execution_results)} execution results\n")
+        
+        # Call OpenAI API (no JSON mode - we want natural text)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=self.max_tokens,
+            temperature=OPENAI_TEMPERATURE
+        )
+        
+        # Get the final answer
+        final_answer = response.choices[0].message.content
+        
+        # Extract token usage
+        token_usage = {
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+            "total_tokens": response.usage.total_tokens
+        }
+        
+        logger.info(f"\n{'=' * 80}\nFINAL ANSWER GENERATED\n{'=' * 80}\n")
+        logger.info(f"Answer length: {len(final_answer)} characters\n")
+        logger.info(f"Token usage: {token_usage['total_tokens']} tokens\n")
+        
+        return {
+            "answer": final_answer,
+            "token_usage": token_usage
+        }
