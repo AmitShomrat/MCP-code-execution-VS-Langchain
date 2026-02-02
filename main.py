@@ -7,9 +7,7 @@ Run with: python main.py
 import uvicorn
 import multiprocessing
 from multiprocessing import Process
-
-from app.app_logging.logger import setup_logger
-
+from app.app_logging.logger import setup_logger 
 # Initialize logger for application startup
 logger = setup_logger(__name__)
 
@@ -45,7 +43,7 @@ def start_gateway_server():
     """
     uvicorn.run(
         "docker_code.mcp_gateway_server:app",
-        host="0.0.0.0",
+        host="localhost",
         port=8080,
         reload=False,
         log_level="info"
