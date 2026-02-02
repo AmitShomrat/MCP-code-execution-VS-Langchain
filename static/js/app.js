@@ -717,6 +717,32 @@ function initializeMultiTaskMode() {
         });
     });
     
+    // Approach toggle functionality (CE, Traditional, or Both)
+    const approachToggleBtns = document.querySelectorAll('.approach-toggle-btn');
+    if (approachToggleBtns.length > 0) {
+        approachToggleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update button states
+                approachToggleBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update selected approach
+                selectedApproach = btn.dataset.approach;
+                console.log('Selected approach:', selectedApproach);
+                
+                // Update UI visibility based on selection (if results are displayed)
+                const resultsSection = document.getElementById('multiTaskResults');
+                if (resultsSection && resultsSection.style.display === 'block') {
+                    updateResultsVisibility(selectedApproach);
+                    // Re-render charts if they exist
+                    if (multiTaskResults) {
+                        displayMultiTaskCharts(multiTaskResults);
+                    }
+                }
+            });
+        });
+    }
+    
     // Add task button
     if (addTaskBtn) {
         addTaskBtn.addEventListener('click', addTaskItem);
@@ -1025,6 +1051,15 @@ async function runAllTasks() {
     
     const maxTurns = parseInt(document.getElementById('maxTurns').value) || 3;
     
+    // Get selected approach
+    const approachBtns = document.querySelectorAll('.approach-toggle-btn');
+    let selectedApproachValue = 'both';
+    approachBtns.forEach(btn => {
+        if (btn.classList.contains('active')) {
+            selectedApproachValue = btn.dataset.approach;
+        }
+    });
+    
     showLoading(`Running ${tasks.length} benchmark tasks...`);
     disableButtons();
     document.getElementById('runAllTasksBtn').disabled = true;
@@ -1038,7 +1073,10 @@ async function runAllTasks() {
             },
             body: JSON.stringify({
                 tasks: tasks,
-                max_turns: maxTurns
+                max_turns: maxTurns,
+                approaches: selectedApproachValue === 'both' ? ['code_execution', 'traditional'] : 
+                           selectedApproachValue === 'code_execution' ? ['code_execution'] : 
+                           ['traditional']
             })
         });
         
@@ -1048,8 +1086,10 @@ async function runAllTasks() {
         
         const data = await response.json();
         multiTaskResults = data;
+        selectedApproach = selectedApproachValue; // Store the selected approach
         
         displayMultiTaskResults(data);
+        updateResultsVisibility(selectedApproach);
         
     } catch (error) {
         console.error('Error running multi-task benchmark:', error);
@@ -1118,42 +1158,130 @@ function downloadResults() {
 }
 
 /**
+ * Update results visibility based on selected approach
+ */
+function updateResultsVisibility(approach) {
+    console.log('Updating results visibility for approach:', approach);
+    
+    // Find all elements with data-approach attribute
+    const codeExecElements = document.querySelectorAll('[data-approach="code_execution"]');
+    const traditionalElements = document.querySelectorAll('[data-approach="traditional"]');
+    const bothElements = document.querySelectorAll('[data-approach="both"]');
+    
+    if (approach === 'both') {
+        // Show both
+        codeExecElements.forEach(el => el.style.display = '');
+        traditionalElements.forEach(el => el.style.display = '');
+        bothElements.forEach(el => el.style.display = ''); // Show comparison elements
+    } else if (approach === 'code_execution') {
+        // Show only CE, hide Traditional
+        codeExecElements.forEach(el => el.style.display = '');
+        traditionalElements.forEach(el => el.style.display = 'none');
+        bothElements.forEach(el => el.style.display = ''); // Charts still show (with one dataset)
+    } else if (approach === 'traditional') {
+        // Show only Traditional, hide CE
+        codeExecElements.forEach(el => el.style.display = 'none');
+        traditionalElements.forEach(el => el.style.display = '');
+        bothElements.forEach(el => el.style.display = ''); // Charts still show (with one dataset)
+    }
+}
+
+/**
  * Display summary cards
  */
 function displaySummary(summary) {
     const summaryGrid = document.getElementById('summaryGrid');
     
-    summaryGrid.innerHTML = `
+    const showCodeExec = selectedApproach === 'both' || selectedApproach === 'code_execution';
+    const showTraditional = selectedApproach === 'both' || selectedApproach === 'traditional';
+    const showComparison = selectedApproach === 'both';
+    
+    let summaryHTML = `
         <div class="summary-card">
             <h4>Total Tasks</h4>
             <div class="value">${summary.total_tasks}</div>
         </div>
-        <div class="summary-card">
-            <h4>Avg Time (Code Exec)</h4>
-            <div class="value">${summary.avg_code_exec_time}s</div>
-            <div class="subtext">vs ${summary.avg_traditional_time}s</div>
-        </div>
-        <div class="summary-card">
-            <h4>Time Improvement</h4>
-            <div class="value">${summary.time_improvement}%</div>
-            <div class="subtext">${summary.time_improvement > 0 ? 'Faster' : 'Slower'}</div>
-        </div>
-        <div class="summary-card">
-            <h4>Avg Tokens (Code Exec)</h4>
-            <div class="value">${summary.avg_code_exec_tokens}</div>
-            <div class="subtext">vs ${summary.avg_traditional_tokens}</div>
-        </div>
-        <div class="summary-card">
-            <h4>Token Reduction</h4>
-            <div class="value">${summary.token_reduction}%</div>
-            <div class="subtext">${summary.token_reduction > 0 ? 'Less' : 'More'}</div>
-        </div>
-        <div class="summary-card">
-            <h4>Success Rate</h4>
-            <div class="value">${summary.code_exec_successes}/${summary.total_tasks}</div>
-            <div class="subtext">Code Execution MCP</div>
-        </div>
     `;
+    
+    if (showCodeExec) {
+        summaryHTML += `
+            <div class="summary-card" data-approach="code_execution">
+                <h4>Avg Time (Code Exec)</h4>
+                <div class="value">${summary.avg_code_exec_time}s</div>
+                ${showComparison ? `<div class="subtext">vs ${summary.avg_traditional_time}s</div>` : ''}
+            </div>
+        `;
+    }
+    
+    if (showTraditional) {
+        summaryHTML += `
+            <div class="summary-card" data-approach="traditional">
+                <h4>Avg Time (Traditional)</h4>
+                <div class="value">${summary.avg_traditional_time}s</div>
+                ${showComparison ? `<div class="subtext">vs ${summary.avg_code_exec_time}s</div>` : ''}
+            </div>
+        `;
+    }
+    
+    if (showComparison) {
+        summaryHTML += `
+            <div class="summary-card">
+                <h4>Time Improvement</h4>
+                <div class="value">${summary.time_improvement}%</div>
+                <div class="subtext">${summary.time_improvement > 0 ? 'Faster' : 'Slower'}</div>
+            </div>
+        `;
+    }
+    
+    if (showCodeExec) {
+        summaryHTML += `
+            <div class="summary-card" data-approach="code_execution">
+                <h4>Avg Tokens (Code Exec)</h4>
+                <div class="value">${summary.avg_code_exec_tokens}</div>
+                ${showComparison ? `<div class="subtext">vs ${summary.avg_traditional_tokens}</div>` : ''}
+            </div>
+        `;
+    }
+    
+    if (showTraditional) {
+        summaryHTML += `
+            <div class="summary-card" data-approach="traditional">
+                <h4>Avg Tokens (Traditional)</h4>
+                <div class="value">${summary.avg_traditional_tokens}</div>
+                ${showComparison ? `<div class="subtext">vs ${summary.avg_code_exec_tokens}</div>` : ''}
+            </div>
+        `;
+    }
+    
+    if (showComparison) {
+        summaryHTML += `
+            <div class="summary-card">
+                <h4>Token Reduction</h4>
+                <div class="value">${summary.token_reduction}%</div>
+                <div class="subtext">${summary.token_reduction > 0 ? 'Less' : 'More'}</div>
+            </div>
+        `;
+    }
+    
+    if (showCodeExec) {
+        summaryHTML += `
+            <div class="summary-card" data-approach="code_execution">
+                <h4>Success Rate (CE)</h4>
+                <div class="value">${summary.code_exec_successes}/${summary.total_tasks}</div>
+            </div>
+        `;
+    }
+    
+    if (showTraditional) {
+        summaryHTML += `
+            <div class="summary-card" data-approach="traditional">
+                <h4>Success Rate (Traditional)</h4>
+                <div class="value">${summary.traditional_successes}/${summary.total_tasks}</div>
+            </div>
+        `;
+    }
+    
+    summaryGrid.innerHTML = summaryHTML;
 }
 
 /**
@@ -1176,29 +1304,41 @@ function displayMultiTaskCharts(data) {
     }
     
     const timeCtx = timeCanvas.getContext('2d');
-    const timeLabels = data.results.map(r => r.task_id);
+    const timeLabels = data.results.map(r => r.task_id || r.user_query?.substring(0, 20) || `Task ${data.results.indexOf(r) + 1}`);
     const codeExecTimes = data.results.map(r => r.comparison?.code_exec_time || 0);
     const traditionalTimes = data.results.map(r => r.comparison?.traditional_time || 0);
     
+    // Determine which approaches to show based on selected approach
+    const showCodeExec = selectedApproach === 'both' || selectedApproach === 'code_execution';
+    const showTraditional = selectedApproach === 'both' || selectedApproach === 'traditional';
+    
     console.log('Creating time chart with data:', { timeLabels, codeExecTimes, traditionalTimes });
+    
+    const datasets = [];
+    if (showCodeExec) {
+        datasets.push({
+            label: 'Code Execution MCP',
+            data: codeExecTimes,
+            backgroundColor: 'rgba(0, 255, 136, 0.7)',
+            borderColor: 'rgba(0, 255, 136, 1)',
+            borderWidth: 2
+        });
+    }
+    if (showTraditional) {
+        datasets.push({
+            label: 'Traditional MCP',
+            data: traditionalTimes,
+            backgroundColor: 'rgba(233, 69, 96, 0.7)',
+            borderColor: 'rgba(233, 69, 96, 1)',
+            borderWidth: 2
+        });
+    }
     
     multiTimeChart = new Chart(timeCtx, {
         type: 'bar',
         data: {
             labels: timeLabels,
-            datasets: [{
-                label: 'Code Execution MCP',
-                data: codeExecTimes,
-                backgroundColor: 'rgba(0, 255, 136, 0.7)',
-                borderColor: 'rgba(0, 255, 136, 1)',
-                borderWidth: 2
-            }, {
-                label: 'Traditional MCP',
-                data: traditionalTimes,
-                backgroundColor: 'rgba(233, 69, 96, 0.7)',
-                borderColor: 'rgba(233, 69, 96, 1)',
-                borderWidth: 2
-            }]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -1238,25 +1378,34 @@ function displayMultiTaskCharts(data) {
     const codeExecTokens = data.results.map(r => r.comparison?.code_exec_total_tokens || 0);
     const traditionalTokens = data.results.map(r => r.comparison?.traditional_total_tokens || 0);
     
+    // Use the same show flags from time chart
     console.log('Creating token chart with data:', { codeExecTokens, traditionalTokens });
+    
+    const tokenDatasets = [];
+    if (showCodeExec) {
+        tokenDatasets.push({
+            label: 'Code Execution MCP',
+            data: codeExecTokens,
+            backgroundColor: 'rgba(0, 255, 136, 0.7)',
+            borderColor: 'rgba(0, 255, 136, 1)',
+            borderWidth: 2
+        });
+    }
+    if (showTraditional) {
+        tokenDatasets.push({
+            label: 'Traditional MCP',
+            data: traditionalTokens,
+            backgroundColor: 'rgba(233, 69, 96, 0.7)',
+            borderColor: 'rgba(233, 69, 96, 1)',
+            borderWidth: 2
+        });
+    }
     
     multiTokenChart = new Chart(tokenCtx, {
         type: 'bar',
         data: {
             labels: timeLabels,
-            datasets: [{
-                label: 'Code Execution MCP',
-                data: codeExecTokens,
-                backgroundColor: 'rgba(0, 255, 136, 0.7)',
-                borderColor: 'rgba(0, 255, 136, 1)',
-                borderWidth: 2
-            }, {
-                label: 'Traditional MCP',
-                data: traditionalTokens,
-                backgroundColor: 'rgba(233, 69, 96, 0.7)',
-                borderColor: 'rgba(233, 69, 96, 1)',
-                borderWidth: 2
-            }]
+            datasets: tokenDatasets
         },
         options: {
             responsive: true,
@@ -1384,10 +1533,10 @@ function displayDetailedResults(results) {
                         ${result.task_id}: ${result.user_query}
                     </h5>
                     <div class="status-badges">
-                        <span class="status-badge ${codeExecSuccess ? 'success' : 'error'}">
+                        <span class="status-badge ${codeExecSuccess ? 'success' : 'error'}" data-approach="code_execution">
                             Code Exec: ${codeExecSuccess ? '✓ Success' : '✗ Failed'}
                         </span>
-                        <span class="status-badge ${traditionalSuccess ? 'success' : 'error'}">
+                        <span class="status-badge ${traditionalSuccess ? 'success' : 'error'}" data-approach="traditional">
                             Traditional: ${traditionalSuccess ? '✓ Success' : '✗ Failed'}
                         </span>
                     </div>
@@ -1397,14 +1546,15 @@ function displayDetailedResults(results) {
             
             <!-- Quick Metrics Summary -->
             <div class="result-item-metrics">
-                <div class="result-metric">
+                <div class="result-metric" data-approach="code_execution">
                     <span class="result-metric-label">⚡ Code Exec Time</span>
                     <span class="result-metric-value highlight-green">${result.comparison?.code_exec_time?.toFixed(2) || 'N/A'}s</span>
                 </div>
-                <div class="result-metric">
+                <div class="result-metric" data-approach="traditional">
                     <span class="result-metric-label">🔧 Traditional Time</span>
                     <span class="result-metric-value highlight-red">${result.comparison?.traditional_time?.toFixed(2) || 'N/A'}s</span>
                 </div>
+                ${(selectedApproach === 'both') ? `
                 <div class="result-metric">
                     <span class="result-metric-label">📊 Time Difference</span>
                     <span class="result-metric-value ${timeDiff < 0 ? 'highlight-green' : 'highlight-red'}">
@@ -1412,19 +1562,20 @@ function displayDetailedResults(results) {
                         ${timeDiff < 0 ? '(Faster ⚡)' : '(Slower 🐌)'}
                     </span>
                 </div>
-                <div class="result-metric">
+                ` : ''}
+                <div class="result-metric" data-approach="code_execution">
                     <span class="result-metric-label">⚡ Code Exec Tokens</span>
                     <span class="result-metric-value highlight-green">${result.comparison?.code_exec_total_tokens || 0}</span>
                 </div>
-                <div class="result-metric">
+                <div class="result-metric" data-approach="traditional">
                     <span class="result-metric-label">🔧 Traditional Tokens</span>
                     <span class="result-metric-value highlight-red">${result.comparison?.traditional_total_tokens || 0}</span>
                 </div>
-                <div class="result-metric">
+                <div class="result-metric" data-approach="code_execution">
                     <span class="result-metric-label">⚡ Code Exec Calls</span>
                     <span class="result-metric-value">${result.comparison?.code_exec_llm_calls || 0}</span>
                 </div>
-                <div class="result-metric">
+                <div class="result-metric" data-approach="traditional">
                     <span class="result-metric-label">🔧 Traditional Calls</span>
                     <span class="result-metric-value">${result.comparison?.traditional_llm_calls || 0}</span>
                 </div>
@@ -1438,7 +1589,7 @@ function displayDetailedResults(results) {
                 </summary>
                 <div class="result-details-content">
                     <!-- Code Execution MCP Results -->
-                    <div class="approach-results code-exec-results" data-section="code-exec">
+                    <div class="approach-results code-exec-results" data-section="code-exec" data-approach="code_execution">
                         <div class="approach-header">
                             <h6 class="approach-title">⚡ Code Execution MCP</h6>
                             <button class="collapse-btn" onclick="toggleApproachSection(event, 'code-exec')" title="Collapse this section">
@@ -1467,7 +1618,7 @@ function displayDetailedResults(results) {
                     </div>
                     
                     <!-- Traditional MCP Results -->
-                    <div class="approach-results traditional-results" data-section="traditional">
+                    <div class="approach-results traditional-results" data-section="traditional" data-approach="traditional">
                         <div class="approach-header">
                             <h6 class="approach-title">🔧 Traditional MCP</h6>
                             <button class="collapse-btn" onclick="toggleApproachSection(event, 'traditional')" title="Collapse this section">

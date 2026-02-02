@@ -164,9 +164,14 @@ class MultiTaskRequest(BaseModel):
     Attributes:
         tasks: List of tasks to run
         max_turns: Maximum LLM turns for code execution approach
+        approaches: List of approaches to run - ["code_execution"], ["traditional"], or ["code_execution", "traditional"]
     """
     tasks: List[TaskDefinition] = Field(..., description="List of tasks to execute")
     max_turns: int = Field(3, description="Max LLM turns", ge=1, le=10)
+    approaches: List[str] = Field(
+        default=["code_execution", "traditional"],
+        description="Approaches to run: 'code_execution', 'traditional', or both"
+    )
 
 
 class TaskResult(BaseModel):

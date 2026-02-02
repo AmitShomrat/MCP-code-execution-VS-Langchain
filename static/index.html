@@ -208,6 +208,23 @@
                     </div>
                     
                     <div class="multi-task-controls">
+                        <div class="approach-selector">
+                            <label class="control-label">Select Approach:</label>
+                            <div class="approach-toggle-container">
+                                <button class="approach-toggle-btn active" data-approach="both" title="Run both approaches">
+                                    <span>🔄</span>
+                                    Both
+                                </button>
+                                <button class="approach-toggle-btn" data-approach="code_execution" title="Code Execution MCP only">
+                                    <span>⚡</span>
+                                    CE
+                                </button>
+                                <button class="approach-toggle-btn" data-approach="traditional" title="Traditional MCP only">
+                                    <span>🔧</span>
+                                    Traditional
+                                </button>
+                            </div>
+                        </div>
                         <label>
                             Max LLM Turns:
                             <input type="number" id="maxTurns" value="10" min="1" max="10" />
@@ -239,11 +256,11 @@
                     </div>
                     
                     <div class="results-charts">
-                        <div class="chart-box">
+                        <div class="chart-box" data-approach="both">
                             <h4>Time Comparison</h4>
                             <canvas id="multiTimeChart"></canvas>
                         </div>
-                        <div class="chart-box">
+                        <div class="chart-box" data-approach="both">
                             <h4>Token Usage</h4>
                             <canvas id="multiTokenChart"></canvas>
                         </div>

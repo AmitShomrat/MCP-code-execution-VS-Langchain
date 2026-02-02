@@ -1,6 +1,6 @@
 # db_server.grant_door_access
 
-Grants door access to a user
+Grants door access to a user by adding their passkey to the door's allowed passkeys. Validates user and door exist.
 
 ## Input Schema
 ```json

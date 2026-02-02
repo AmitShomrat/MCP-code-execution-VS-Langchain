@@ -8,10 +8,12 @@ import json
 import os
 from typing import Dict, Any, List
 from datetime import datetime
-
+import sys
+from pathlib import Path
 from app.benchmarks.code_execution_mcp import CodeExecutionBenchmark
 from app.benchmarks.traditional_mcp import TraditionalMCPBenchmark
 from app.app_logging.logger import setup_logger
+from custome_mcp_servers import reset_shared_db
 
 logger = setup_logger(__name__)
 
@@ -43,17 +45,19 @@ class BenchmarkRunner:
     async def run_task_on_both_benchmarks(
         self, 
         task: Dict[str, Any],
-        max_turns: int = 3
+        max_turns: int = 3,
+        approaches: List[str] = None
     ) -> Dict[str, Any]:
         """
-        Run a single task on both benchmarks and return comparison results.
+        Run a single task on selected benchmarks and return comparison results.
         
         Args:
             task: Task dictionary with task_id, user_query, expected_behaviour, expected_output
             max_turns: Maximum number of LLM turns for code execution approach
+            approaches: List of approaches to run - ["code_execution"], ["traditional"], or both
             
         Returns:
-            Dictionary containing results from both benchmarks
+            Dictionary containing results from selected benchmarks
         """
         if not self.initialized:
             raise RuntimeError(
@@ -61,25 +65,74 @@ class BenchmarkRunner:
                 "Call await runner.initialize_async() first."
             )
         
+        # Default to both if not specified
+        if approaches is None:
+            approaches = ["code_execution", "traditional"]
+        
         task_id = task.get("task_id")
         user_query = task.get("user_query")
         
         logger.info(f"\n{'=' * 80}")
         logger.info(f"RUNNING TASK {task_id}: {user_query}")
+        logger.info(f"Selected approaches: {approaches}")
         logger.info(f"{'=' * 80}\n")
         
-        # Run Code Execution MCP benchmark
-        logger.info("Running Code Execution MCP approach...")
-        code_exec_result = await self.code_execution_benchmark.run_benchmark_async(
-            query=user_query,
-            max_turns=max_turns
-        )
+        # CRITICAL: Reset database ONCE at the start of each task
+        # This ensures both approaches start with a clean database state
+        logger.info("Resetting database to original state for new task...")
+        try:
+            reset_shared_db()
+            # Small delay to ensure file system sync and MCP server process detection
+            import asyncio
+            await asyncio.sleep(0.2)
+            logger.info("Database reset complete. Fresh database ready for benchmarks.\n")
+        except Exception as e:
+            logger.error(f"Error resetting database: {e}")
+            # Continue anyway - the reset might have partially succeeded
+            logger.warning("Continuing with benchmark despite reset error...\n")
         
-        # Run Traditional MCP benchmark
-        logger.info("Running Traditional MCP approach...")
-        traditional_result = await self.traditional_benchmark.run_benchmark_async(
-            query=user_query
-        )
+        # Initialize result placeholders
+        code_exec_result = None
+        traditional_result = None
+        
+        # Run Code Execution MCP benchmark if selected
+        if "code_execution" in approaches:
+            logger.info("Running Code Execution MCP approach...")
+            code_exec_result = await self.code_execution_benchmark.run_benchmark_async(
+                query=user_query,
+                max_turns=max_turns
+            )
+        else:
+            logger.info("Skipping Code Execution MCP approach")
+            code_exec_result = {
+                "success": False,
+                "output": "",
+                "error": "Not executed (approach not selected)",
+                "time": 0,
+                "llm_calls": [],
+                "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                "conversation_history": [],
+                "turn_details": []
+            }
+        
+        # Run Traditional MCP benchmark if selected
+        if "traditional" in approaches:
+            logger.info("Running Traditional MCP approach...")
+            traditional_result = await self.traditional_benchmark.run_benchmark_async(
+                query=user_query
+            )
+        else:
+            logger.info("Skipping Traditional MCP approach")
+            traditional_result = {
+                "success": False,
+                "output": "",
+                "error": "Not executed (approach not selected)",
+                "time": 0,
+                "llm_calls": [],
+                "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                "conversation_history": [],
+                "turn_details": []
+            }
         
         # Compile results
         result = {
@@ -106,26 +159,30 @@ class BenchmarkRunner:
         }
         
         logger.info(f"\nTask {task_id} completed!")
-        logger.info(f"Code Execution: {code_exec_result.get('time', 0):.2f}s, "
-                   f"{len(code_exec_result.get('llm_calls', []))} LLM calls, "
-                   f"{code_exec_result.get('tokens', {}).get('total_tokens', 0)} tokens")
-        logger.info(f"Traditional: {traditional_result.get('time', 0):.2f}s, "
-                   f"{len(traditional_result.get('llm_calls', []))} LLM calls, "
-                   f"{traditional_result.get('tokens', {}).get('total_tokens', 0)} tokens")
+        if "code_execution" in approaches:
+            logger.info(f"Code Execution: {code_exec_result.get('time', 0):.2f}s, "
+                       f"{len(code_exec_result.get('llm_calls', []))} LLM calls, "
+                       f"{code_exec_result.get('tokens', {}).get('total_tokens', 0)} tokens")
+        if "traditional" in approaches:
+            logger.info(f"Traditional: {traditional_result.get('time', 0):.2f}s, "
+                       f"{len(traditional_result.get('llm_calls', []))} LLM calls, "
+                       f"{traditional_result.get('tokens', {}).get('total_tokens', 0)} tokens")
         
         return result
     
     async def run_all_tasks(
         self,
         tasks: List[Dict[str, Any]],
-        max_turns: int = 3
+        max_turns: int = 3,
+        approaches: List[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Run all tasks on both benchmarks.
+        Run all tasks on selected benchmarks.
         
         Args:
             tasks: List of task dictionaries
             max_turns: Maximum number of LLM turns for code execution approach
+            approaches: List of approaches to run - ["code_execution"], ["traditional"], or both
             
         Returns:
             List of result dictionaries for each task
@@ -136,11 +193,15 @@ class BenchmarkRunner:
                 "Call await runner.initialize_async() first."
             )
         
+        # Default to both if not specified
+        if approaches is None:
+            approaches = ["code_execution", "traditional"]
+        
         results = []
         
         for task in tasks:
             try:
-                result = await self.run_task_on_both_benchmarks(task, max_turns)
+                result = await self.run_task_on_both_benchmarks(task, max_turns, approaches)
                 results.append(result)
             except Exception as e:
                 logger.error(f"Error running task {task.get('task_id')}: {str(e)}")

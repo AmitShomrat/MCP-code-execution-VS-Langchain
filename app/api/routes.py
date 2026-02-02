@@ -22,11 +22,8 @@ from app.api.models import (
     MultiTaskResponse,
     TaskResult
 )
-from app.benchmarks.traditional_mcp import TraditionalMCPBenchmark
-traditionalMCPBenchmark = TraditionalMCPBenchmark()
-from app.benchmarks.code_execution_mcp import CodeExecutionBenchmark
-codeExecutionBenchmark = CodeExecutionBenchmark()
 from app.benchmarks.benchmark_runner import BenchmarkRunner
+# Create single benchmark runner instance - it manages both benchmark instances internally
 benchmarkRunner = BenchmarkRunner()
 from app.utils import BenchmarkStorage
 from app.app_logging.logger import setup_logger
@@ -50,8 +47,7 @@ async def lifespan(app: FastAPI):
     logger.info("FastAPI Application Starting Up")
     logger.info("=" * 80)
 
-    await codeExecutionBenchmark.initialize_async()
-    await traditionalMCPBenchmark.initialize_async()
+    # Initialize benchmark runner once - it will initialize both benchmark instances internally
     await benchmarkRunner.initialize_async()
 
     yield
@@ -63,9 +59,7 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 80)
     
     try:
-        # Close MCP client singleton
-        await codeExecutionBenchmark.cleanup_async()
-        await traditionalMCPBenchmark.cleanup_async()
+        # Cleanup benchmark runner - it will cleanup both benchmark instances internally
         await benchmarkRunner.cleanup_async()
         logger.info("Server shutdown complete")
     except Exception as e:
@@ -173,8 +167,8 @@ async def run_traditional_mcp_benchmark(request: QueryRequest):
         # benchmark = TraditionalMCPBenchmark()
         # await benchmark.initialize_async()
         
-        # Run the benchmark with user query
-        result = await traditionalMCPBenchmark.run_benchmark_async(request.query)
+        # Run the benchmark with user query using benchmarkRunner's instance
+        result = await benchmarkRunner.traditional_benchmark.run_benchmark_async(request.query)
         
         # Save benchmark results to JSON file
         storage.save_result(
@@ -227,8 +221,8 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
         # Log the benchmark request
         logger.info(f"Running Code Execution MCP benchmark for query: {request.query}")
         
-        # Run the benchmark with user query
-        result = await codeExecutionBenchmark.run_benchmark_async(request.query)
+        # Run the benchmark with user query using benchmarkRunner's instance
+        result = await benchmarkRunner.code_execution_benchmark.run_benchmark_async(request.query)
         
         # Save benchmark results to JSON file
         storage.save_result(
@@ -332,10 +326,11 @@ async def run_multiple_benchmarks(request: MultiTaskRequest):
         # Convert Pydantic models to dicts for the runner
         tasks = [task.model_dump() for task in request.tasks]
         
-        # Run all tasks
+        # Run all tasks with selected approaches
         results = await benchmarkRunner.run_all_tasks(
             tasks=tasks,
-            max_turns=request.max_turns
+            max_turns=request.max_turns,
+            approaches=request.approaches
         )
         
         # Calculate summary statistics

@@ -1,6 +1,6 @@
 # db_server.add_user_record
 
-Adds a user record to the database
+Adds a user record to the database with proper validation and security checks
 
 ## Input Schema
 ```json

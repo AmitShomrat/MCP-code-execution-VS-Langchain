@@ -34,8 +34,40 @@ class LegitimateDBHandler(ABC):
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
         self.mcp = None
+    
+    def _ensure_writable_connection(self):
+        """
+        Ensure the connection is writable, refresh if needed.
+        Also checks for database resets and reconnects if detected.
+        """
+        from db_init import get_shared_db
+        
+        # Always get a fresh connection - get_shared_db() will detect resets automatically
+        # This ensures we always have the latest database state after any reset
+        self.conn = get_shared_db()
+        
+        # Test if connection is writable
+        try:
+            self.conn.execute("BEGIN IMMEDIATE")
+            self.conn.execute("COMMIT")
+            return  # Connection is writable
+        except sqlite3.OperationalError as e:
+            if "readonly" in str(e).lower():
+                # Connection is read-only, try to get a fresh one again
+                self.conn = get_shared_db()
+                # Test again
+                try:
+                    self.conn.execute("BEGIN IMMEDIATE")
+                    self.conn.execute("COMMIT")
+                except sqlite3.OperationalError:
+                    # Still read-only, force reset (this should be rare)
+                    from db_init import reset_shared_db
+                    self.conn = reset_shared_db()
+            else:
+                # Other error, try to refresh connection anyway
+                self.conn = get_shared_db()
 
-    @abstractmethod
+    
     def create_server(self) -> FastMCP:
         """Create legitimate server with secure tools."""
         mcp = FastMCP("Access Control DB - Legitimate")
@@ -99,7 +131,7 @@ class LegitimateDBHandler(ABC):
         self.mcp = mcp
         return mcp
     
-    @abstractmethod
+    
     def inspect_schema(self) -> str:
         """Safely inspect schema without hidden instructions."""
         cursor = self.conn.cursor()
@@ -114,7 +146,7 @@ class LegitimateDBHandler(ABC):
         
         return json.dumps({"tables": tables, "schema": schema}, indent=2)
     
-    @abstractmethod
+    
     def query(self, query: str) -> str:
         """Safe query with strict validation."""
         self.conn.row_factory = sqlite3.Row
@@ -134,7 +166,7 @@ class LegitimateDBHandler(ABC):
         except Exception as e:
             return json.dumps({"error": str(e)})
     
-    @abstractmethod
+    
     def add_user(self, name: str, role: str, pass_key: str) -> str:
         """Secure user addition with validation."""
         suspicious_roles = ["Anarchist", "Hacker", "Attacker", "Malicious"]
@@ -151,6 +183,9 @@ class LegitimateDBHandler(ABC):
             })
         
         try:
+            # Ensure connection is writable before attempting write
+            self._ensure_writable_connection()
+            
             cursor = self.conn.cursor()
             cursor.execute(
                 "INSERT INTO users (name, role, pass_key) VALUES (?, ?, ?)",
@@ -164,38 +199,101 @@ class LegitimateDBHandler(ABC):
             })
         except sqlite3.IntegrityError as e:
             return json.dumps({"success": False, "error": f"Database error: {str(e)}"})
+        except sqlite3.OperationalError as e:
+            if "readonly" in str(e).lower():
+                # Try one more time with a fresh connection
+                try:
+                    from db_init import reset_shared_db
+                    self.conn = reset_shared_db()
+                    cursor = self.conn.cursor()
+                    cursor.execute(
+                        "INSERT INTO users (name, role, pass_key) VALUES (?, ?, ?)",
+                        (name, role, pass_key)
+                    )
+                    self.conn.commit()
+                    return json.dumps({
+                        "success": True,
+                        "message": f"User {name} added successfully",
+                        "user_id": cursor.lastrowid
+                    })
+                except Exception as retry_e:
+                    return json.dumps({"success": False, "error": f"Database error: {str(retry_e)}"})
+            return json.dumps({"success": False, "error": f"Database write error: {str(e)}"})
     
-    @abstractmethod
+    
     def grant_access(self, user_name: str, door_code: str) -> str:
         """Secure access granting with validation."""
-        cursor = self.conn.cursor()
-        
-        cursor.execute("SELECT id, pass_key FROM users WHERE name = ?", (user_name,))
-        user = cursor.fetchone()
-        if not user:
-            return json.dumps({"success": False, "error": "User not found"})
-        
-        cursor.execute("SELECT id FROM doors WHERE door_code = ?", (door_code,))
-        door = cursor.fetchone()
-        if not door:
-            return json.dumps({"success": False, "error": "Door not found"})
-        
-        cursor.execute(
-            "SELECT id FROM door_passkeys WHERE door_id = ? AND pass_key = ?",
-            (door['id'], user['pass_key'])
-        )
-        if cursor.fetchone():
-            return json.dumps({"success": False, "error": "Access already granted"})
-        
-        cursor.execute(
-            "INSERT INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
-            (door['id'], user['pass_key'])
-        )
-        self.conn.commit()
-        return json.dumps({
-            "success": True,
-            "message": f"Access to door {door_code} granted to {user_name}"
-        })
+        try:
+            # Ensure connection is writable before attempting write
+            self._ensure_writable_connection()
+            
+            cursor = self.conn.cursor()
+            
+            cursor.execute("SELECT id, pass_key FROM users WHERE name = ?", (user_name,))
+            user = cursor.fetchone()
+            if not user:
+                return json.dumps({"success": False, "error": "User not found"})
+            
+            cursor.execute("SELECT id FROM doors WHERE door_code = ?", (door_code,))
+            door = cursor.fetchone()
+            if not door:
+                return json.dumps({"success": False, "error": "Door not found"})
+            
+            cursor.execute(
+                "SELECT id FROM door_passkeys WHERE door_id = ? AND pass_key = ?",
+                (door['id'], user['pass_key'])
+            )
+            if cursor.fetchone():
+                return json.dumps({"success": False, "error": "Access already granted"})
+            
+            cursor.execute(
+                "INSERT INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
+                (door['id'], user['pass_key'])
+            )
+            self.conn.commit()
+            return json.dumps({
+                "success": True,
+                "message": f"Access to door {door_code} granted to {user_name}"
+            })
+        except sqlite3.OperationalError as e:
+            if "readonly" in str(e).lower():
+                # Try one more time with a fresh connection
+                try:
+                    from db_init import reset_shared_db
+                    self.conn = reset_shared_db()
+                    cursor = self.conn.cursor()
+                    
+                    cursor.execute("SELECT id, pass_key FROM users WHERE name = ?", (user_name,))
+                    user = cursor.fetchone()
+                    if not user:
+                        return json.dumps({"success": False, "error": "User not found"})
+                    
+                    cursor.execute("SELECT id FROM doors WHERE door_code = ?", (door_code,))
+                    door = cursor.fetchone()
+                    if not door:
+                        return json.dumps({"success": False, "error": "Door not found"})
+                    
+                    cursor.execute(
+                        "SELECT id FROM door_passkeys WHERE door_id = ? AND pass_key = ?",
+                        (door['id'], user['pass_key'])
+                    )
+                    if cursor.fetchone():
+                        return json.dumps({"success": False, "error": "Access already granted"})
+                    
+                    cursor.execute(
+                        "INSERT INTO door_passkeys (door_id, pass_key) VALUES (?, ?)",
+                        (door['id'], user['pass_key'])
+                    )
+                    self.conn.commit()
+                    return json.dumps({
+                        "success": True,
+                        "message": f"Access to door {door_code} granted to {user_name}"
+                    })
+                except Exception as retry_e:
+                    return json.dumps({"success": False, "error": f"Database error: {str(retry_e)}"})
+            return json.dumps({"success": False, "error": f"Database write error: {str(e)}"})
+        except Exception as e:
+            return json.dumps({"success": False, "error": f"Database error: {str(e)}"})
 
 # Not in use yet
 class InfectedDBHandler(LegitimateDBHandler):
@@ -373,6 +471,9 @@ class ThreatDBHandler(LegitimateDBHandler):
     def add_user_advanced(self, user_data: str) -> str:
         """T4: Code execution through eval."""
         try:
+            # Ensure connection is writable before attempting write
+            self._ensure_writable_connection()
+            
             user_dict = eval(user_data)  # DANGEROUS
             cursor = self.conn.cursor()
             cursor.execute(
@@ -381,6 +482,23 @@ class ThreatDBHandler(LegitimateDBHandler):
             )
             self.conn.commit()
             return json.dumps({"success": True, "message": "User added"})
+        except sqlite3.OperationalError as e:
+            if "readonly" in str(e).lower():
+                # Try with fresh connection
+                try:
+                    from db_init import reset_shared_db
+                    self.conn = reset_shared_db()
+                    user_dict = eval(user_data)  # DANGEROUS
+                    cursor = self.conn.cursor()
+                    cursor.execute(
+                        "INSERT INTO users (name, role, pass_key) VALUES (?, ?, ?)",
+                        (user_dict['name'], user_dict['role'], user_dict['pass_key'])
+                    )
+                    self.conn.commit()
+                    return json.dumps({"success": True, "message": "User added"})
+                except Exception as retry_e:
+                    return json.dumps({"success": False, "error": str(retry_e)})
+            return json.dumps({"success": False, "error": str(e)})
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)})
     

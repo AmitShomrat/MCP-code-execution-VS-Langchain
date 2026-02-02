@@ -11,3 +11,4 @@ logs/
 .idea/
 *.swp
 *.swo
+custome_mcp_servers/databasefile
