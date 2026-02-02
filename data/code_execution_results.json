@@ -1202,5 +1202,49 @@
         "total_tokens": 4997
       }
     }
+  },
+  {
+    "timestamp": "2025-12-29T12:42:56.441115",
+    "query": "list current directory",
+    "result": {
+      "success": true,
+      "output": "An unexpected error occurred: HTTPConnectionPool(host='host.docker.internal', port=8080): Max retries exceeded with url: /mcp/call (Caused by NewConnectionError(\"HTTPConnection(host='host.docker.internal', port=8080): Failed to establish a new connection: [Errno 101] Network is unreachable\"))\n",
+      "error": null,
+      "time": 18.07423424720764,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 6.37,
+          "tokens": {
+            "prompt_tokens": 1196,
+            "completion_tokens": 176,
+            "total_tokens": 1372
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 5.31,
+          "tokens": {
+            "prompt_tokens": 1448,
+            "completion_tokens": 164,
+            "total_tokens": 1612
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 6.39,
+          "tokens": {
+            "prompt_tokens": 1693,
+            "completion_tokens": 176,
+            "total_tokens": 1869
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4337,
+        "completion_tokens": 516,
+        "total_tokens": 4853
+      }
+    }
   }
 ]
