@@ -1323,5 +1323,23 @@
       "output": "",
       "error": "Code generation failed"
     }
+  },
+  {
+    "timestamp": "2026-01-25T12:36:54.402207",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
+  },
+  {
+    "timestamp": "2026-01-25T12:37:59.730191",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "output": "",
+      "error": "Code generation failed"
+    }
   }
 ]

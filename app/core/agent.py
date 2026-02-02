@@ -28,20 +28,38 @@ class Agent(ABC):
     
     
     def llm_call(self, messages: List[Dict[str, str]]) -> Dict[str, str]:
+        """
+        Call OpenAI API with JSON mode to ensure structured response
+
+        Args:
+            messages: List of messages to send to the LLM
+        
+        Returns:
+            Dictionary with:
+                - status: "exploring" or "complete"
+                - code: Generated Python code
+                - reasoning: Explanation of status choice
+                - token_usage: Token usage information
+
+        Raises:
+            Exception: If there is an error calling the LLM
+        """
         try:
-            result = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=self.max_tokens,
-                temperature=OPENAI_TEMPERATURE
-            )
-            raw_result = result.choices[0].message.content
+            response = self.client.chat.completions.create(
+                                                    model=self.model,
+                                                    messages=messages,
+                                                    response_format={"type": "json_object"},
+                                                    max_tokens=self.max_tokens,
+                                                    temperature=OPENAI_TEMPERATURE
+                                                )
+
+            raw_result = response.choices[0].message.content
             
             result = json.loads(raw_result)
             result["token_usage"] = {
-                "prompt_tokens": result.usage.prompt_tokens,
-                "completion_tokens": result.usage.completion_tokens,
-                "total_tokens": result.usage.total_tokens
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens
             }
             return result
 
