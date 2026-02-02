@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": 1,
+    "user_query": "List all files in the current directory",
+    "expected_behaviour": "Agent calls filesystem.list_directory with path='.' and completes in 1-2 turns",
+    "expected_output": "List of files and directories in the project root"
+  }
+]
+

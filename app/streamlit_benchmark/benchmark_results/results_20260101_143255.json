@@ -1,0 +1,92 @@
+[
+  {
+    "task_id": 1,
+    "user_query": "List all files in the current directory",
+    "expected_behaviour": "Agent calls filesystem.list_directory with path='.' and completes in 1-2 turns",
+    "expected_output": "List of files and directories in the project root",
+    "timestamp": "2026-01-01T14:32:55.104228",
+    "code_execution_mcp": {
+      "success": true,
+      "output": "[FILE] .DS_Store\n[FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] STDIO_AND_PIPES_GUIDE.md\n[FILE] Sales_Records.csv\n[DIR] __pycache__\n[DIR] app\n[DIR] custome_mcp_servers\n[DIR] data\n[DIR] docker\n[DIR] docker_code\n[FILE] launcher.py\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] test_case.txt\n[FILE] tools_bridge.py\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 4.806207180023193,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 2.34,
+          "tokens": {
+            "prompt_tokens": 1469,
+            "completion_tokens": 141,
+            "total_tokens": 1610
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 1.12,
+          "tokens": {
+            "prompt_tokens": 1716,
+            "completion_tokens": 130,
+            "total_tokens": 1846
+          }
+        },
+        {
+          "call_number": 3,
+          "latency": 1.35,
+          "tokens": {
+            "prompt_tokens": 1993,
+            "completion_tokens": 140,
+            "total_tokens": 2133
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 5178,
+        "completion_tokens": 411,
+        "total_tokens": 5589
+      }
+    },
+    "traditional_mcp": {
+      "success": true,
+      "output": "Here is a list of files and directories in the current directory:\n\n- **Files:**\n  - .DS_Store\n  - .dockerignore\n  - .env\n  - .gitignore\n  - .python-version\n  - README.md\n  - STDIO_AND_PIPES_GUIDE.md\n  - Sales_Records.csv\n  - launcher.py\n  - main.py\n  - mcp_config.json\n  - pyproject.toml\n  - test_case.txt\n  - tools_bridge.py\n  - uv.lock\n\n- **Directories:**\n  - .git\n  - .venv\n  - __pycache__\n  - app\n  - custome_mcp_servers\n  - data\n  - docker\n  - docker_code\n  - logs\n  - servers\n  - static",
+      "time": 2.464035987854004,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 1.23,
+          "tokens": {
+            "prompt_tokens": 2162,
+            "completion_tokens": 23,
+            "total_tokens": 2185
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 1.23,
+          "tokens": {
+            "prompt_tokens": 2368,
+            "completion_tokens": 172,
+            "total_tokens": 2540
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4530,
+        "completion_tokens": 195,
+        "total_tokens": 4725
+      }
+    },
+    "comparison": {
+      "code_exec_success": true,
+      "traditional_success": true,
+      "code_exec_time": 4.806207180023193,
+      "traditional_time": 2.464035987854004,
+      "code_exec_llm_calls": 3,
+      "traditional_llm_calls": 2,
+      "code_exec_total_tokens": 5589,
+      "traditional_total_tokens": 4725,
+      "time_diff": 2.3421711921691895,
+      "llm_calls_diff": 1,
+      "tokens_diff": 864
+    }
+  }
+]
