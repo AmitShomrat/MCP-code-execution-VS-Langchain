@@ -37,14 +37,14 @@ def start_gateway_server():
     
     Configuration:
     - Host: 0.0.0.0 (accessible from network)
-    - Port: 8080
+    - Port: 8085
     - Reload: False (disabled for multiprocessing)
     - Log level: info
     """
     uvicorn.run(
         "docker_code.mcp_gateway_server:app",
         host="localhost",
-        port=8080,
+        port=8085,
         reload=False,
         log_level="info"
     )
@@ -56,15 +56,15 @@ def main():
     
     Servers:
     - Main Dashboard: http://localhost:8000
-    - MCP Gateway: http://localhost:8080
+    - MCP Gateway: http://localhost:8085
     """
     # Log server startup information
     logger.info("=" * 80)
     logger.info("STARTING MCP BENCHMARK DASHBOARD & GATEWAY")
     logger.info("\nMain server starting at: http://localhost:8000")
     logger.info("API documentation at: http://localhost:8000/docs")
-    logger.info("\nGateway server starting at: http://localhost:8080")
-    logger.info("Gateway documentation at: http://localhost:8080/docs")
+    logger.info("\nGateway server starting at: http://localhost:8085")
+    logger.info("Gateway documentation at: http://localhost:8085/docs")
     logger.info("=" * 80)
     
     # Create processes for both servers
