@@ -5,21 +5,21 @@ This module implements the traditional approach to MCP where tools are
 directly exposed to the LLM through LangChain's agent framework.
 """
 # Standard library imports
-import asyncio
 import time
 from typing import Dict, Any
-import pandas as pd
-from io import StringIO
+
 
 # LangChain imports for agent framework
 from langchain.agents import create_agent
-from langchain.tools import tool
 
 # Application imports
 from app.app_logging.logger import setup_logger
 from app.core.mcp_client import get_mcp_client
 from app.config import OPENAI_MODEL
-from servers.filesystem import list_directory_decorated, inspect_csv_decorated, read_file_decorated, write_file_decorated
+
+# Dynamic MCP tools
+from app.dynamic_langchain.langchain_mcp_call_tool import mcp_call
+from app.dynamic_langchain.mcp_cataloge import build_mcp_tool_catalog
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
@@ -55,7 +55,8 @@ class TraditionalMCPBenchmark:
         self.llm_calls_list = []
 
         # mcp_tools
-        self.mcp_tools = [list_directory_decorated, inspect_csv_decorated, read_file_decorated, write_file_decorated]
+        self.mcp_tools = [mcp_call]
+        # self.mcp_tools = [list_directory_decorated, inspect_csv_decorated, read_file_decorated, write_file_decorated]
         
     async def initialize_async(self):
         """
@@ -66,6 +67,9 @@ class TraditionalMCPBenchmark:
         """
         # Initialize MCP client and connect to filesystem server
         await self.mcp_client.initialize()
+        self.mcp_tool_catalog = await build_mcp_tool_catalog()
+        logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
+
         
     async def run_benchmark_async(self, query: str) -> Dict[str, Any]:
         """
@@ -117,7 +121,7 @@ class TraditionalMCPBenchmark:
                     {"role": "user", "content": query}
                 ]
             })
-            
+            logger.info(f"result: \n {result}")
             # Initialize variables for output and call tracking
             output = ""
             call_count = 0
@@ -235,44 +239,20 @@ class TraditionalMCPBenchmark:
             System prompt string with tool usage instructions
         """
         # Return comprehensive system prompt with tool usage guidelines
-        return """You are a data analysis assistant with access to filesystem tools.
+        return """You are a data analysis assistant.
 
-## AVAILABLE TOOLS
+                ## AVAILABLE TOOLS
 
-You have three tools available. Choose the appropriate tool based on the file type and task:
+                {self.mcp_tool_catalog}
 
-1. **list_directory(path: str)**
-   - Lists all files and directories in the specified path
-   - Use this to discover available files when the exact filename is unknown
+                ## IMPORTANT RULES
+                - When using tools, ALWAYS call mcp_call with BOTH fields:
+                  - name="<server>.<tool>"
+                  - args={...}.
+                  - Never omit name.
+                - For filesystem operations, prefer tools under the `filesystem.*` server.
+                - If the user gives an exact path, use it directly.
+            """
 
-2. **inspect_csv(path: str)**
-   - BEST CHOICE for CSV file analysis and data processing
-   - Returns: Complete CSV file content as a formatted table with ALL rows
-   - Use this when you need to analyze, filter, aggregate, or process CSV data
-   - Example: Finding top products, calculating totals, filtering by region, etc.
 
-3. **read_file(path: str)**
-   - Reads complete file content (returns entire file)
-   - Use this ONLY for non-CSV files like .txt, .py, .md, .json, etc.
-   - Use when you need the exact full content of text-based files
-
-## HOW TO CHOOSE THE RIGHT TOOL
-
-**For CSV file analysis tasks** (calculations, filtering, aggregations):
-→ Use `inspect_csv` - it provides full CSV data with structure information for analysis
-
-**For reading text files** (.txt, .py, .md, .json):
-→ Use `read_file` - get the full content
-
-**For exploring directories**:
-→ Use `list_directory` - discover available files
-
-## IMPORTANT RULES
-
-- Analyze what information you need before choosing a tool
-- For CSV questions, inspect_csv usually provides sufficient information
-- Use exact column names from inspection results
-- Provide clear, formatted output with your final answer
-- If user mentions a specific file name, use it directly - do not explore directories first
-"""
 
