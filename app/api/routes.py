@@ -17,12 +17,17 @@ from app.api.models import (
     QueryRequest,
     BenchmarkResponse,
     ComparisonResponse,
-    HealthResponse
+    HealthResponse,
+    MultiTaskRequest,
+    MultiTaskResponse,
+    TaskResult
 )
 from app.benchmarks.traditional_mcp import TraditionalMCPBenchmark
 traditionalMCPBenchmark = TraditionalMCPBenchmark()
 from app.benchmarks.code_execution_mcp import CodeExecutionBenchmark
 codeExecutionBenchmark = CodeExecutionBenchmark()
+from app.benchmarks.benchmark_runner import BenchmarkRunner
+benchmarkRunner = BenchmarkRunner()
 from app.utils import BenchmarkStorage
 from app.app_logging.logger import setup_logger
 
@@ -47,6 +52,7 @@ async def lifespan(app: FastAPI):
 
     await codeExecutionBenchmark.initialize_async()
     await traditionalMCPBenchmark.initialize_async()
+    await benchmarkRunner.initialize_async()
 
     yield
     
@@ -60,6 +66,7 @@ async def lifespan(app: FastAPI):
         # Close MCP client singleton
         await codeExecutionBenchmark.cleanup_async()
         await traditionalMCPBenchmark.cleanup_async()
+        await benchmarkRunner.cleanup_async()
         logger.info("Server shutdown complete")
     except Exception as e:
         logger.error(f"Error during shutdown cleanup: {str(e)}")
@@ -293,4 +300,103 @@ async def get_benchmark_comparison():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load comparison data: {str(e)}"
+        )
+
+
+@app.post(
+    "/api/benchmarks/run-multiple",
+    response_model=MultiTaskResponse,
+    summary="Run Multiple Benchmark Tasks",
+    description="Execute multiple benchmark tasks comparing both approaches"
+)
+async def run_multiple_benchmarks(request: MultiTaskRequest):
+    """
+    Run multiple benchmark tasks and compare both approaches.
+    
+    This endpoint allows running a batch of tasks and collecting results
+    from both Code Execution MCP and Traditional MCP approaches.
+    
+    Args:
+        request: Multi-task request containing list of tasks and config
+        
+    Returns:
+        MultiTaskResponse with results and aggregate statistics
+        
+    Raises:
+        HTTPException: If benchmark execution fails
+    """
+    try:
+        logger.info(f"Starting multi-task benchmark with {len(request.tasks)} tasks")
+        
+        # Convert Pydantic models to dicts for the runner
+        tasks = [task.model_dump() for task in request.tasks]
+        
+        # Run all tasks
+        results = await benchmarkRunner.run_all_tasks(
+            tasks=tasks,
+            max_turns=request.max_turns
+        )
+        
+        # Calculate summary statistics
+        code_exec_times = []
+        traditional_times = []
+        code_exec_tokens = []
+        traditional_tokens = []
+        code_exec_successes = 0
+        traditional_successes = 0
+        
+        for result in results:
+            if "error" not in result:
+                comparison = result.get("comparison", {})
+                
+                if comparison.get("code_exec_success"):
+                    code_exec_successes += 1
+                    code_exec_times.append(comparison.get("code_exec_time", 0))
+                    code_exec_tokens.append(comparison.get("code_exec_total_tokens", 0))
+                    
+                if comparison.get("traditional_success"):
+                    traditional_successes += 1
+                    traditional_times.append(comparison.get("traditional_time", 0))
+                    traditional_tokens.append(comparison.get("traditional_total_tokens", 0))
+        
+        # Compute averages
+        avg_code_exec_time = sum(code_exec_times) / len(code_exec_times) if code_exec_times else 0
+        avg_traditional_time = sum(traditional_times) / len(traditional_times) if traditional_times else 0
+        avg_code_exec_tokens = sum(code_exec_tokens) / len(code_exec_tokens) if code_exec_tokens else 0
+        avg_traditional_tokens = sum(traditional_tokens) / len(traditional_tokens) if traditional_tokens else 0
+        
+        summary = {
+            "total_tasks": len(request.tasks),
+            "code_exec_successes": code_exec_successes,
+            "traditional_successes": traditional_successes,
+            "avg_code_exec_time": round(avg_code_exec_time, 2),
+            "avg_traditional_time": round(avg_traditional_time, 2),
+            "avg_code_exec_tokens": round(avg_code_exec_tokens, 0),
+            "avg_traditional_tokens": round(avg_traditional_tokens, 0),
+            "time_improvement": round(
+                ((avg_traditional_time - avg_code_exec_time) / avg_traditional_time * 100)
+                if avg_traditional_time > 0 else 0,
+                1
+            ),
+            "token_reduction": round(
+                ((avg_traditional_tokens - avg_code_exec_tokens) / avg_traditional_tokens * 100)
+                if avg_traditional_tokens > 0 else 0,
+                1
+            )
+        }
+        
+        logger.info(f"Multi-task benchmark completed: {code_exec_successes}/{len(request.tasks)} code exec success, "
+                   f"{traditional_successes}/{len(request.tasks)} traditional success")
+        
+        return MultiTaskResponse(
+            success=True,
+            results=results,
+            summary=summary
+        )
+        
+    except Exception as e:
+        logger.error(f"Multi-task benchmark error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to run multi-task benchmark: {str(e)}"
         )

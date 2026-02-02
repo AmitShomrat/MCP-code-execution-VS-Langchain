@@ -1,0 +1,33 @@
+[
+  {
+    "task_id": "task_1",
+    "user_query": "List all files in the current directory",
+    "expected_behaviour": "Agent calls filesystem.list_directory with path='.' and completes in 1-2 turns",
+    "expected_output": "List of files and directories in the project root"
+  },
+  {
+    "task_id": "task_2",
+    "user_query": "What is the size and last modified date of ./main.py?",
+    "expected_behaviour": "Agent may explore to find the tool and calls filesystem.get_file_info for main.py and completes in 2 turns",
+    "expected_output": "File metadata including size, modified date, permissions"
+  },
+  {
+    "task_id": "task_3",
+    "user_query": "Calculate the sum of numbers from 1 to 100",
+    "expected_behaviour": "Agent uses code execution to calculate the sum",
+    "expected_output": "5050"
+  },
+  {
+    "task_id": "task_4",
+    "user_query": "What are the first 5 lines of README.md?",
+    "expected_behaviour": "Agent calls filesystem.read_file with path='README.md' and optional line limit",
+    "expected_output": "First few lines of the README file"
+  },
+  {
+    "task_id": "task_5",
+    "user_query": "Count how many Python files are in the app directory",
+    "expected_behaviour": "Agent explores filesystem to count .py files in app/",
+    "expected_output": "Number of Python files in the app directory"
+  }
+]
+

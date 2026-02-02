@@ -140,3 +140,65 @@ class HealthResponse(BaseModel):
     timestamp: str = Field(..., description="Current server timestamp")
     version: str = Field(..., description="API version")
 
+
+class TaskDefinition(BaseModel):
+    """
+    Model for a benchmark task definition.
+    
+    Attributes:
+        task_id: Unique task identifier
+        user_query: Query to execute
+        expected_behaviour: Expected behavior description
+        expected_output: Expected output description
+    """
+    task_id: str = Field(..., description="Unique task identifier")
+    user_query: str = Field(..., description="Query to execute")
+    expected_behaviour: Optional[str] = Field(None, description="Expected behavior")
+    expected_output: Optional[str] = Field(None, description="Expected output")
+
+
+class MultiTaskRequest(BaseModel):
+    """
+    Request model for running multiple benchmark tasks.
+    
+    Attributes:
+        tasks: List of tasks to run
+        max_turns: Maximum LLM turns for code execution approach
+    """
+    tasks: List[TaskDefinition] = Field(..., description="List of tasks to execute")
+    max_turns: int = Field(3, description="Max LLM turns", ge=1, le=10)
+
+
+class TaskResult(BaseModel):
+    """
+    Model for a single task result with comparison.
+    
+    Attributes:
+        task_id: Task identifier
+        user_query: Original query
+        timestamp: Execution timestamp
+        code_execution_mcp: Code execution MCP result
+        traditional_mcp: Traditional MCP result
+        comparison: Comparison metrics
+    """
+    task_id: str = Field(..., description="Task identifier")
+    user_query: str = Field(..., description="Executed query")
+    timestamp: str = Field(..., description="Execution timestamp")
+    code_execution_mcp: Dict[str, Any] = Field(..., description="Code execution results")
+    traditional_mcp: Dict[str, Any] = Field(..., description="Traditional results")
+    comparison: Dict[str, Any] = Field(..., description="Comparison metrics")
+
+
+class MultiTaskResponse(BaseModel):
+    """
+    Response model for multiple task execution.
+    
+    Attributes:
+        success: Whether all tasks completed
+        results: List of task results
+        summary: Aggregate metrics across all tasks
+    """
+    success: bool = Field(..., description="Overall success status")
+    results: List[TaskResult] = Field(..., description="Results for each task")
+    summary: Dict[str, Any] = Field(..., description="Aggregate statistics")
+

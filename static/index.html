@@ -15,30 +15,44 @@
         <header class="header">
             <h1>MCP Benchmark Comparison Dashboard</h1>
             <p class="subtitle">Compare Traditional MCP vs Code Execution MCP Performance</p>
-        </header>
-
-        <section class="query-section">
-            <h2>Enter Your Query</h2>
-            <textarea 
-                id="queryInput" 
-                placeholder="Example: Calculate total revenue in Sales_Records.csv"
-                rows="3"
-            ></textarea>
             
-            <div class="button-group">
-                <button id="btnTraditional" class="btn btn-traditional">
-                    <span class="btn-icon">🔧</span>
-                    Traditional MCP
+            <!-- Mode Toggle -->
+            <div class="mode-toggle-container">
+                <button class="mode-toggle-btn active" data-mode="single">
+                    <span class="mode-icon">🎯</span>
+                    Single Task
                 </button>
-                
-                <button id="btnCodeExecution" class="btn btn-code-exec">
-                    <span class="btn-icon">⚡</span>
-                    Code Execution MCP
+                <button class="mode-toggle-btn" data-mode="multiple">
+                    <span class="mode-icon">📋</span>
+                    Multiple Tasks
                 </button>
             </div>
-        </section>
+        </header>
 
-        <section class="results-section">
+        <!-- Single Task Mode -->
+        <div id="singleTaskMode">
+            <section class="query-section">
+                <h2>Enter Your Query</h2>
+                <textarea 
+                    id="queryInput" 
+                    placeholder="Example: Calculate total revenue in Sales_Records.csv"
+                    rows="3"
+                ></textarea>
+                
+                <div class="button-group">
+                    <button id="btnTraditional" class="btn btn-traditional">
+                        <span class="btn-icon">🔧</span>
+                        Traditional MCP
+                    </button>
+                    
+                    <button id="btnCodeExecution" class="btn btn-code-exec">
+                        <span class="btn-icon">⚡</span>
+                        Code Execution MCP
+                    </button>
+                </div>
+            </section>
+
+            <section class="results-section">
             <h2>Live Execution Results</h2>
             
             <div class="results-grid">
@@ -167,6 +181,83 @@
                 </div>
             </div>
         </section>
+        </div>
+        <!-- End Single Task Mode -->
+
+        <!-- Multiple Tasks Mode -->
+        <div id="multiTaskMode" style="display: none;">
+            <section class="multi-task-section">
+                <h2>Run Multiple Benchmark Tasks</h2>
+                
+                <div class="task-input-area">
+                    <div class="task-input-header">
+                        <h3>Add Tasks</h3>
+                        <div class="header-actions">
+                            <input type="file" id="uploadTasksFile" accept=".json" style="display: none;">
+                            <button id="uploadTasksBtn" class="btn-small btn-upload">
+                                <span>📤</span> Upload Tasks JSON
+                            </button>
+                            <button id="addTaskBtn" class="btn-small btn-add">
+                                <span>+</span> Add Task
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="tasksList" class="tasks-list">
+                        <!-- Tasks will be added here dynamically -->
+                    </div>
+                    
+                    <div class="multi-task-controls">
+                        <label>
+                            Max LLM Turns:
+                            <input type="number" id="maxTurns" value="3" min="1" max="10" />
+                        </label>
+                        <button id="runAllTasksBtn" class="btn btn-primary">
+                            <span class="btn-icon">🚀</span>
+                            Run All Tasks
+                        </button>
+                        <button id="clearTasksBtn" class="btn btn-secondary">
+                            <span class="btn-icon">🗑️</span>
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Multi-Task Results -->
+                <div id="multiTaskResults" class="multi-task-results" style="display: none;">
+                    <div class="results-header">
+                        <h3>Results Summary</h3>
+                        <div class="results-actions">
+                            <button id="downloadResultsBtn" class="btn-small btn-download" title="Download results as JSON">
+                                <span>📥</span> Download Results
+                            </button>
+                            <p class="storage-info">💾 Results are displayed here and can be downloaded as JSON</p>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-grid" id="summaryGrid">
+                        <!-- Summary cards will be added here -->
+                    </div>
+                    
+                    <div class="results-charts">
+                        <div class="chart-box">
+                            <h4>Time Comparison</h4>
+                            <canvas id="multiTimeChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Token Usage</h4>
+                            <canvas id="multiTokenChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="detailed-results">
+                        <h4>Detailed Results</h4>
+                        <div id="detailedResultsList"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <!-- End Multiple Tasks Mode -->
     </div>
 
     <div class="loading-overlay" id="loadingOverlay">

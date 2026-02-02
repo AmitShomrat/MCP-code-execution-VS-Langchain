@@ -650,6 +650,733 @@ function initializeExportButton() {
     exportBtn.addEventListener('click', exportResultsAsCSV);
 }
 
+/**
+ * =====================================================================
+ * MULTI-TASK MODE FUNCTIONALITY
+ * =====================================================================
+ */
+
+let taskCounter = 0;
+let multiTaskResults = null;
+let multiTimeChart = null;
+let multiTokenChart = null;
+
+/**
+ * Initialize multi-task mode event listeners
+ */
+function initializeMultiTaskMode() {
+    console.log('Initializing multi-task mode...');
+    
+    const singleMode = document.getElementById('singleTaskMode');
+    const multiMode = document.getElementById('multiTaskMode');
+    const toggleBtns = document.querySelectorAll('.mode-toggle-btn');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const runAllTasksBtn = document.getElementById('runAllTasksBtn');
+    const clearTasksBtn = document.getElementById('clearTasksBtn');
+    
+    console.log('Found elements:', {
+        singleMode: !!singleMode,
+        multiMode: !!multiMode,
+        toggleBtnsCount: toggleBtns.length,
+        addTaskBtn: !!addTaskBtn,
+        runAllTasksBtn: !!runAllTasksBtn,
+        clearTasksBtn: !!clearTasksBtn
+    });
+    
+    if (!singleMode || !multiMode) {
+        console.error('Mode containers not found!');
+        return;
+    }
+    
+    if (toggleBtns.length === 0) {
+        console.error('Toggle buttons not found!');
+        return;
+    }
+    
+    // Mode toggle functionality
+    toggleBtns.forEach((btn, index) => {
+        console.log(`Setting up toggle button ${index}:`, btn.dataset.mode);
+        btn.addEventListener('click', (e) => {
+            console.log('Toggle clicked!', btn.dataset.mode);
+            const mode = btn.dataset.mode;
+            
+            // Update button states
+            toggleBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Show/hide sections
+            if (mode === 'single') {
+                console.log('Switching to single mode');
+                singleMode.style.display = 'block';
+                multiMode.style.display = 'none';
+            } else {
+                console.log('Switching to multiple mode');
+                singleMode.style.display = 'none';
+                multiMode.style.display = 'block';
+            }
+        });
+    });
+    
+    // Add task button
+    if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', addTaskItem);
+    }
+    
+    // Upload tasks button
+    const uploadTasksBtn = document.getElementById('uploadTasksBtn');
+    const uploadTasksFile = document.getElementById('uploadTasksFile');
+    if (uploadTasksBtn && uploadTasksFile) {
+        uploadTasksBtn.addEventListener('click', () => uploadTasksFile.click());
+        uploadTasksFile.addEventListener('change', handleTasksFileUpload);
+    }
+    
+    // Run all tasks button
+    if (runAllTasksBtn) {
+        runAllTasksBtn.addEventListener('click', runAllTasks);
+    }
+    
+    // Clear tasks button
+    if (clearTasksBtn) {
+        clearTasksBtn.addEventListener('click', clearAllTasks);
+    }
+    
+    // Download results button (will be visible after running tasks)
+    const downloadBtn = document.getElementById('downloadResultsBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', downloadResults);
+    }
+    
+    // Add initial task
+    addTaskItem();
+    
+    console.log('Multi-task mode initialization complete');
+}
+
+/**
+ * Add a new task input item
+ */
+function addTaskItem() {
+    taskCounter++;
+    const tasksList = document.getElementById('tasksList');
+    
+    const taskItem = document.createElement('div');
+    taskItem.className = 'task-item';
+    taskItem.dataset.taskId = taskCounter;
+    
+    taskItem.innerHTML = `
+        <div class="task-item-content">
+            <input 
+                type="text" 
+                placeholder="Task ID (e.g., task_${taskCounter})" 
+                class="task-id-input"
+                value="task_${taskCounter}"
+            />
+            <textarea 
+                placeholder="Enter your query (e.g., Calculate total revenue in Sales_Records.csv)"
+                class="task-query-input"
+                rows="2"
+            ></textarea>
+        </div>
+        <button class="task-item-remove" onclick="removeTaskItem(${taskCounter})">✕</button>
+    `;
+    
+    tasksList.appendChild(taskItem);
+}
+
+/**
+ * Remove a task item
+ */
+function removeTaskItem(taskId) {
+    const taskItem = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
+    if (taskItem) {
+        taskItem.remove();
+    }
+    
+    // If no tasks left, show message
+    const tasksList = document.getElementById('tasksList');
+    if (tasksList.children.length === 0) {
+        tasksList.innerHTML = '<div class="empty-tasks-message">No tasks added. Click "Add Task" to begin.</div>';
+    }
+}
+
+/**
+ * Clear all tasks
+ */
+function clearAllTasks() {
+    const tasksList = document.getElementById('tasksList');
+    tasksList.innerHTML = '<div class="empty-tasks-message">No tasks added. Click "Add Task" to begin.</div>';
+    document.getElementById('multiTaskResults').style.display = 'none';
+    taskCounter = 0;
+}
+
+/**
+ * Handle tasks file upload
+ */
+function handleTasksFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    console.log('Uploading tasks file:', file.name);
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const tasks = JSON.parse(e.target.result);
+            loadTasksFromJSON(tasks);
+            
+            // Reset the file input so the same file can be uploaded again
+            event.target.value = '';
+        } catch (error) {
+            console.error('Error parsing tasks file:', error);
+            alert('Error parsing tasks file. Please ensure it is valid JSON.\n\n' + error.message);
+        }
+    };
+    
+    reader.onerror = function() {
+        console.error('Error reading file');
+        alert('Error reading file. Please try again.');
+    };
+    
+    reader.readAsText(file);
+}
+
+/**
+ * Load tasks from JSON data
+ */
+function loadTasksFromJSON(tasks) {
+    console.log('Loading tasks from JSON:', tasks);
+    
+    // Validate tasks
+    if (!Array.isArray(tasks)) {
+        alert('Invalid tasks format. Expected an array of tasks.');
+        return;
+    }
+    
+    if (tasks.length === 0) {
+        alert('No tasks found in the file.');
+        return;
+    }
+    
+    // Clear existing tasks
+    clearAllTasks();
+    
+    // Add each task
+    const tasksList = document.getElementById('tasksList');
+    tasksList.innerHTML = ''; // Clear the empty message
+    
+    tasks.forEach((task, index) => {
+        taskCounter++;
+        
+        const taskItem = document.createElement('div');
+        taskItem.className = 'task-item';
+        taskItem.dataset.taskId = taskCounter;
+        
+        // Use task data or defaults
+        const taskId = task.task_id || `task_${taskCounter}`;
+        const userQuery = task.user_query || '';
+        const expectedBehaviour = task.expected_behaviour || '';
+        const expectedOutput = task.expected_output || '';
+        
+        taskItem.innerHTML = `
+            <div class="task-item-content">
+                <input 
+                    type="text" 
+                    placeholder="Task ID (e.g., task_${taskCounter})" 
+                    class="task-id-input"
+                    value="${escapeHtml(taskId)}"
+                />
+                <textarea 
+                    placeholder="Enter your query (e.g., Calculate total revenue in Sales_Records.csv)"
+                    class="task-query-input"
+                    rows="2"
+                >${escapeHtml(userQuery)}</textarea>
+                ${expectedBehaviour || expectedOutput ? `
+                <details class="task-details">
+                    <summary>Expected Behaviour & Output</summary>
+                    <div class="task-details-content">
+                        ${expectedBehaviour ? `
+                        <div class="task-detail-field">
+                            <label>Expected Behaviour:</label>
+                            <textarea class="task-expected-behaviour" rows="2" readonly>${escapeHtml(expectedBehaviour)}</textarea>
+                        </div>
+                        ` : ''}
+                        ${expectedOutput ? `
+                        <div class="task-detail-field">
+                            <label>Expected Output:</label>
+                            <textarea class="task-expected-output" rows="2" readonly>${escapeHtml(expectedOutput)}</textarea>
+                        </div>
+                        ` : ''}
+                    </div>
+                </details>
+                ` : ''}
+            </div>
+            <button class="task-item-remove" onclick="removeTaskItem(${taskCounter})">✕</button>
+        `;
+        
+        tasksList.appendChild(taskItem);
+    });
+    
+    console.log(`Loaded ${tasks.length} tasks successfully`);
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Collect all tasks from the UI
+ */
+function collectTasks() {
+    const taskItems = document.querySelectorAll('.task-item');
+    const tasks = [];
+    
+    taskItems.forEach(item => {
+        const taskId = item.querySelector('.task-id-input').value.trim();
+        const userQuery = item.querySelector('.task-query-input').value.trim();
+        
+        if (taskId && userQuery) {
+            tasks.push({
+                task_id: taskId,
+                user_query: userQuery,
+                expected_behaviour: '',
+                expected_output: ''
+            });
+        }
+    });
+    
+    return tasks;
+}
+
+/**
+ * Run all tasks
+ */
+async function runAllTasks() {
+    const tasks = collectTasks();
+    
+    if (tasks.length === 0) {
+        alert('Please add at least one task with both ID and query filled in.');
+        return;
+    }
+    
+    const maxTurns = parseInt(document.getElementById('maxTurns').value) || 3;
+    
+    showLoading(`Running ${tasks.length} benchmark tasks...`);
+    disableButtons();
+    document.getElementById('runAllTasksBtn').disabled = true;
+    document.getElementById('clearTasksBtn').disabled = true;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/benchmarks/run-multiple`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tasks: tasks,
+                max_turns: maxTurns
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        multiTaskResults = data;
+        
+        displayMultiTaskResults(data);
+        
+    } catch (error) {
+        console.error('Error running multi-task benchmark:', error);
+        alert(`Failed to run benchmarks: ${error.message}`);
+    } finally {
+        hideLoading();
+        enableButtons();
+        document.getElementById('runAllTasksBtn').disabled = false;
+        document.getElementById('clearTasksBtn').disabled = false;
+    }
+}
+
+/**
+ * Display multi-task results
+ */
+function displayMultiTaskResults(data) {
+    console.log('Displaying multi-task results:', data);
+    
+    const resultsSection = document.getElementById('multiTaskResults');
+    if (!resultsSection) {
+        console.error('Results section not found!');
+        return;
+    }
+    
+    resultsSection.style.display = 'block';
+    
+    // Display summary
+    console.log('Displaying summary...');
+    displaySummary(data.summary);
+    
+    // Display charts
+    console.log('Displaying charts...');
+    displayMultiTaskCharts(data);
+    
+    // Display detailed results
+    console.log('Displaying detailed results...');
+    displayDetailedResults(data.results);
+    
+    // Scroll to results
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    console.log('Results display complete');
+}
+
+/**
+ * Download results as JSON
+ */
+function downloadResults() {
+    if (!multiTaskResults) {
+        alert('No results to download');
+        return;
+    }
+    
+    const dataStr = JSON.stringify(multiTaskResults, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `benchmark_results_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    console.log('Results downloaded');
+}
+
+/**
+ * Display summary cards
+ */
+function displaySummary(summary) {
+    const summaryGrid = document.getElementById('summaryGrid');
+    
+    summaryGrid.innerHTML = `
+        <div class="summary-card">
+            <h4>Total Tasks</h4>
+            <div class="value">${summary.total_tasks}</div>
+        </div>
+        <div class="summary-card">
+            <h4>Avg Time (Code Exec)</h4>
+            <div class="value">${summary.avg_code_exec_time}s</div>
+            <div class="subtext">vs ${summary.avg_traditional_time}s</div>
+        </div>
+        <div class="summary-card">
+            <h4>Time Improvement</h4>
+            <div class="value">${summary.time_improvement}%</div>
+            <div class="subtext">${summary.time_improvement > 0 ? 'Faster' : 'Slower'}</div>
+        </div>
+        <div class="summary-card">
+            <h4>Avg Tokens (Code Exec)</h4>
+            <div class="value">${summary.avg_code_exec_tokens}</div>
+            <div class="subtext">vs ${summary.avg_traditional_tokens}</div>
+        </div>
+        <div class="summary-card">
+            <h4>Token Reduction</h4>
+            <div class="value">${summary.token_reduction}%</div>
+            <div class="subtext">${summary.token_reduction > 0 ? 'Less' : 'More'}</div>
+        </div>
+        <div class="summary-card">
+            <h4>Success Rate</h4>
+            <div class="value">${summary.code_exec_successes}/${summary.total_tasks}</div>
+            <div class="subtext">Code Execution MCP</div>
+        </div>
+    `;
+}
+
+/**
+ * Display multi-task charts
+ */
+function displayMultiTaskCharts(data) {
+    // Destroy existing charts if they exist
+    if (multiTimeChart) {
+        multiTimeChart.destroy();
+    }
+    if (multiTokenChart) {
+        multiTokenChart.destroy();
+    }
+    
+    // Time comparison chart
+    const timeCanvas = document.getElementById('multiTimeChart');
+    if (!timeCanvas) {
+        console.error('Time chart canvas not found!');
+        return;
+    }
+    
+    const timeCtx = timeCanvas.getContext('2d');
+    const timeLabels = data.results.map(r => r.task_id);
+    const codeExecTimes = data.results.map(r => r.comparison?.code_exec_time || 0);
+    const traditionalTimes = data.results.map(r => r.comparison?.traditional_time || 0);
+    
+    console.log('Creating time chart with data:', { timeLabels, codeExecTimes, traditionalTimes });
+    
+    multiTimeChart = new Chart(timeCtx, {
+        type: 'bar',
+        data: {
+            labels: timeLabels,
+            datasets: [{
+                label: 'Code Execution MCP',
+                data: codeExecTimes,
+                backgroundColor: 'rgba(0, 255, 136, 0.7)',
+                borderColor: 'rgba(0, 255, 136, 1)',
+                borderWidth: 2
+            }, {
+                label: 'Traditional MCP',
+                data: traditionalTimes,
+                backgroundColor: 'rgba(233, 69, 96, 0.7)',
+                borderColor: 'rgba(233, 69, 96, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Time (seconds)',
+                        color: '#eeeeee'
+                    },
+                    ticks: { color: '#aaaaaa' },
+                    grid: { color: '#333333' }
+                },
+                x: {
+                    ticks: { color: '#aaaaaa' },
+                    grid: { color: '#333333' }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#eeeeee' }
+                }
+            }
+        }
+    });
+    
+    // Token comparison chart
+    const tokenCanvas = document.getElementById('multiTokenChart');
+    if (!tokenCanvas) {
+        console.error('Token chart canvas not found!');
+        return;
+    }
+    
+    const tokenCtx = tokenCanvas.getContext('2d');
+    const codeExecTokens = data.results.map(r => r.comparison?.code_exec_total_tokens || 0);
+    const traditionalTokens = data.results.map(r => r.comparison?.traditional_total_tokens || 0);
+    
+    console.log('Creating token chart with data:', { codeExecTokens, traditionalTokens });
+    
+    multiTokenChart = new Chart(tokenCtx, {
+        type: 'bar',
+        data: {
+            labels: timeLabels,
+            datasets: [{
+                label: 'Code Execution MCP',
+                data: codeExecTokens,
+                backgroundColor: 'rgba(0, 255, 136, 0.7)',
+                borderColor: 'rgba(0, 255, 136, 1)',
+                borderWidth: 2
+            }, {
+                label: 'Traditional MCP',
+                data: traditionalTokens,
+                backgroundColor: 'rgba(233, 69, 96, 0.7)',
+                borderColor: 'rgba(233, 69, 96, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Tokens',
+                        color: '#eeeeee'
+                    },
+                    ticks: { color: '#aaaaaa' },
+                    grid: { color: '#333333' }
+                },
+                x: {
+                    ticks: { color: '#aaaaaa' },
+                    grid: { color: '#333333' }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#eeeeee' }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Display detailed results list
+ */
+function displayDetailedResults(results) {
+    const detailedList = document.getElementById('detailedResultsList');
+    
+    if (!detailedList) {
+        console.error('Detailed results list element not found!');
+        return;
+    }
+    
+    console.log('Displaying', results.length, 'detailed results');
+    
+    if (results.length === 0) {
+        detailedList.innerHTML = '<p class="no-results">No results to display</p>';
+        return;
+    }
+    
+    detailedList.innerHTML = results.map((result, index) => {
+        const codeExecSuccess = result.comparison?.code_exec_success;
+        const traditionalSuccess = result.comparison?.traditional_success;
+        const timeDiff = result.comparison?.time_diff || 0;
+        const tokenDiff = result.comparison?.tokens_diff || 0;
+        
+        // Format LLM calls
+        const formatLLMCalls = (calls) => {
+            if (!calls || calls.length === 0) return '<p class="no-data">No LLM calls</p>';
+            return calls.map(call => `
+                <div class="llm-call-item">
+                    <span class="call-number">Call ${call.call_number}</span>
+                    <span class="call-latency">${call.latency?.toFixed(2) || 'N/A'}s</span>
+                    <span class="call-tokens">${call.tokens?.total_tokens || 0} tokens</span>
+                    <span class="call-breakdown">
+                        (${call.tokens?.prompt_tokens || 0} prompt + ${call.tokens?.completion_tokens || 0} completion)
+                    </span>
+                </div>
+            `).join('');
+        };
+        
+        return `
+        <div class="result-item">
+            <div class="result-item-header">
+                <div>
+                    <h5>
+                        <span class="result-number">#${index + 1}</span>
+                        ${result.task_id}: ${result.user_query}
+                    </h5>
+                    <div class="status-badges">
+                        <span class="status-badge ${codeExecSuccess ? 'success' : 'error'}">
+                            Code Exec: ${codeExecSuccess ? '✓ Success' : '✗ Failed'}
+                        </span>
+                        <span class="status-badge ${traditionalSuccess ? 'success' : 'error'}">
+                            Traditional: ${traditionalSuccess ? '✓ Success' : '✗ Failed'}
+                        </span>
+                    </div>
+                </div>
+                <span class="result-timestamp">${new Date(result.timestamp).toLocaleString()}</span>
+            </div>
+            
+            <!-- Quick Metrics Summary -->
+            <div class="result-item-metrics">
+                <div class="result-metric">
+                    <span class="result-metric-label">⚡ Code Exec Time</span>
+                    <span class="result-metric-value highlight-green">${result.comparison?.code_exec_time?.toFixed(2) || 'N/A'}s</span>
+                </div>
+                <div class="result-metric">
+                    <span class="result-metric-label">🔧 Traditional Time</span>
+                    <span class="result-metric-value highlight-red">${result.comparison?.traditional_time?.toFixed(2) || 'N/A'}s</span>
+                </div>
+                <div class="result-metric">
+                    <span class="result-metric-label">📊 Time Difference</span>
+                    <span class="result-metric-value ${timeDiff < 0 ? 'highlight-green' : 'highlight-red'}">
+                        ${timeDiff > 0 ? '+' : ''}${timeDiff.toFixed(2)}s
+                        ${timeDiff < 0 ? '(Faster ⚡)' : '(Slower 🐌)'}
+                    </span>
+                </div>
+                <div class="result-metric">
+                    <span class="result-metric-label">⚡ Code Exec Tokens</span>
+                    <span class="result-metric-value highlight-green">${result.comparison?.code_exec_total_tokens || 0}</span>
+                </div>
+                <div class="result-metric">
+                    <span class="result-metric-label">🔧 Traditional Tokens</span>
+                    <span class="result-metric-value highlight-red">${result.comparison?.traditional_total_tokens || 0}</span>
+                </div>
+                <div class="result-metric">
+                    <span class="result-metric-label">⚡ Code Exec Calls</span>
+                    <span class="result-metric-value">${result.comparison?.code_exec_llm_calls || 0}</span>
+                </div>
+                <div class="result-metric">
+                    <span class="result-metric-label">🔧 Traditional Calls</span>
+                    <span class="result-metric-value">${result.comparison?.traditional_llm_calls || 0}</span>
+                </div>
+            </div>
+            
+            <!-- Collapsible Detailed Results -->
+            <details class="result-details">
+                <summary class="result-details-summary">
+                    <span class="summary-icon">▶</span>
+                    View Full Results & Outputs
+                </summary>
+                <div class="result-details-content">
+                    <!-- Code Execution MCP Results -->
+                    <div class="approach-results code-exec-results">
+                        <h6 class="approach-title">⚡ Code Execution MCP</h6>
+                        
+                        <div class="output-section">
+                            <h7>Output:</h7>
+                            <pre class="output-box">${result.code_execution_mcp?.output || result.code_execution_mcp?.error || 'No output'}</pre>
+                        </div>
+                        
+                        <div class="llm-calls-section">
+                            <h7>LLM Calls (${result.code_execution_mcp?.llm_calls?.length || 0}):</h7>
+                            <div class="llm-calls-list">
+                                ${formatLLMCalls(result.code_execution_mcp?.llm_calls)}
+                            </div>
+                            <div class="total-tokens">
+                                Total: ${result.code_execution_mcp?.tokens?.total_tokens || 0} tokens
+                                (${result.code_execution_mcp?.tokens?.prompt_tokens || 0} prompt + 
+                                ${result.code_execution_mcp?.tokens?.completion_tokens || 0} completion)
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Traditional MCP Results -->
+                    <div class="approach-results traditional-results">
+                        <h6 class="approach-title">🔧 Traditional MCP</h6>
+                        
+                        <div class="output-section">
+                            <h7>Output:</h7>
+                            <pre class="output-box">${result.traditional_mcp?.output || result.traditional_mcp?.error || 'No output'}</pre>
+                        </div>
+                        
+                        <div class="llm-calls-section">
+                            <h7>LLM Calls (${result.traditional_mcp?.llm_calls?.length || 0}):</h7>
+                            <div class="llm-calls-list">
+                                ${formatLLMCalls(result.traditional_mcp?.llm_calls)}
+                            </div>
+                            <div class="total-tokens">
+                                Total: ${result.traditional_mcp?.tokens?.total_tokens || 0} tokens
+                                (${result.traditional_mcp?.tokens?.prompt_tokens || 0} prompt + 
+                                ${result.traditional_mcp?.tokens?.completion_tokens || 0} completion)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        `;
+    }).join('');
+}
+
 // Initialize application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Set up event listeners
@@ -657,4 +1384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize export button
     initializeExportButton();
+    
+    // Initialize multi-task mode
+    initializeMultiTaskMode();
 });
