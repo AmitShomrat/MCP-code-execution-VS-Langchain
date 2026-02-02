@@ -45,6 +45,7 @@ The gateway routes tool calls to real MCP servers.
     │   └── ...
 
 ### Discovery Rules
+    - Explore available servers with list directory tool.
     - Before calling a tool, you MUST read its documentation file
     - Tool documentation is **text only**
     - Tool usage examples are included in each file
@@ -52,13 +53,16 @@ The gateway routes tool calls to real MCP servers.
 Example discovery flow:
 
     1. list server directory index:
-        mcp_call_http("filesystem.list_directory", {"path": "./servers/filesystem"})
+        mcp_call_http("filesystem.list_directory", {"path": "./servers"})
 
-    2. Read tool documentation:
-        mcp_call_http("filesystem.read_text_file", {"path": "./servers/filesystem/list_directory.md"})
+    2. list tools in chosen relevant server directory:
+        mcp_call_http("filesystem.list_directory", {"path": "./servers/<server_name>"})
 
-    3. Call the tool:
-        mcp_call_http("filesystem.list_directory", {"path": "./data"})
+    3. Read tool documentation:
+        mcp_call_http("filesystem.read_text_file", {"path": "./servers/<server_name>/<tool_name>.md"})
+
+    4. Call the tool:
+        mcp_call_http("<server_name>.<tool_name>", {"args": {...}})
 
 ---
 
