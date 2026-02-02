@@ -1226,6 +1226,37 @@ tbody tr:hover {
     font-weight: 500;
 }
 
+.judge-option-container {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.judge-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    user-select: none;
+}
+
+.judge-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--code-exec-color);
+}
+
+.judge-checkbox-label:hover {
+    color: var(--code-exec-color);
+}
+
 .multi-task-controls input[type="number"] {
     width: 80px;
     padding: 8px;

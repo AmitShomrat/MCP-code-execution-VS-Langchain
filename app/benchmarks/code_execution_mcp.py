@@ -57,7 +57,7 @@ class CodeExecutionBenchmark:
         await self._orchestrator.initialize_async()
 
     
-    async def run_benchmark_async(self, query: str, max_turns: int = 5) -> Dict[str, Any]:
+    async def run_benchmark_async(self, query: str, max_turns: int = 5, use_judge: bool = False) -> Dict[str, Any]:
         """
         Run code execution MCP benchmark for the given query.
         
@@ -69,6 +69,7 @@ class CodeExecutionBenchmark:
         Args:
             query: User query to process
             max_turns: Maximum number of LLM turns allowed
+            use_judge: Whether to use LLM as judge for code safety checks
             
         Returns:
             Dictionary with benchmark results:
@@ -80,12 +81,13 @@ class CodeExecutionBenchmark:
                 - tokens: Total token usage across all calls
         """
         # Log benchmark start
-        logger.info(f"Running Code Execution MCP benchmark for query: {query}")
+        logger.info(f"Running Code Execution MCP benchmark for query: {query}, use_judge: {use_judge}")
         
         # Run multi-turn conversation through orchestrator
         result = await self._orchestrator.run_multi_turn_code_async(
             user_query=query,
-            max_turns=max_turns
+            max_turns=max_turns,
+            use_judge=use_judge
         )
         
         # Log benchmark completion

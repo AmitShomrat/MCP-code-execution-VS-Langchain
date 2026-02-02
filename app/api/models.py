@@ -14,6 +14,7 @@ class QueryRequest(BaseModel):
     
     Attributes:
         query: User query string to be processed by the benchmark
+        use_judge: Whether to use LLM as judge for code execution (CE only)
     """
     query: str = Field(
         ...,
@@ -21,6 +22,10 @@ class QueryRequest(BaseModel):
         min_length=1,
         max_length=2000,
         examples=["Calculate total revenue in Sales_Records.csv"]
+    )
+    use_judge: bool = Field(
+        default=False,
+        description="Use LLM as judge for code execution safety checks (CE only)"
     )
 
 
@@ -165,12 +170,17 @@ class MultiTaskRequest(BaseModel):
         tasks: List of tasks to run
         max_turns: Maximum LLM turns for code execution approach
         approaches: List of approaches to run - ["code_execution"], ["traditional"], or ["code_execution", "traditional"]
+        use_judge: Whether to use LLM as judge for code execution (CE only)
     """
     tasks: List[TaskDefinition] = Field(..., description="List of tasks to execute")
     max_turns: int = Field(3, description="Max LLM turns", ge=1, le=50)
     approaches: List[str] = Field(
         default=["code_execution", "traditional"],
         description="Approaches to run: 'code_execution', 'traditional', or both"
+    )
+    use_judge: bool = Field(
+        default=False,
+        description="Use LLM as judge for code execution safety checks (CE only)"
     )
 
 

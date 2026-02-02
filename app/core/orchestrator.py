@@ -85,12 +85,13 @@ class RealMCPOrchestrator:
 
 
 
-    async def run_multi_turn_judge_async(self, user_message: Dict[str, Any], response: Dict[str, Any], llm_call_number: int, max_turns: int = 3) -> Dict[str, Any]:
+    async def run_multi_turn_judge_async(self, user_message: Dict[str, Any], response: Dict[str, Any], llm_call_number: int, conversation_history: List[Dict[str, Any]], max_turns: int = 3) -> Dict[str, Any]:
         f"""
             run multi turn judge async used LLM as a judge to verify code generation safty and execution results compatibilty.
             Args:
                 response: The code agent response in the context of user conversation history. Dict[str,str]
                 user_message: original user query object. (List[Dict[str,str]])
+                conversation_history: Full conversation history including discovery context
                 max_turns: max inner turn iterations for judgements. ( int )
             Returns:
                     'success': bool,
@@ -102,23 +103,42 @@ class RealMCPOrchestrator:
         """
         logger.info(f"Running multi turn judge asyn for turn {llm_call_number}, with response: {response} and user message: {user_message}")
 
-        # List object for pre execution judge messages:
-        # { role: 'developer', 'code': 'code_generated_by_developer' }
-        # List object for pre execution code messages:
-        # { role: 'judge_assistant', 'last_code': 'code_generated_by_code_generation_assistant', 'code_failures': 'reasoning_on_code_failures' }
+        # Extract context from inputs
+        user_query = user_message.get("content", "")
+        code_reasoning = response.get("reasoning", "")
+        generated_code = response.get("code", "")
+        response_status = response.get("status", "exploring")  # Get explicit status from code agent
+        
+        # Determine stage based on explicit status from code agent
+        # "exploring" -> discovery phase (exploring tools, reading docs)
+        # "complete" -> execution phase (performing actual task or providing final answer)
+        stage = "discovery" if response_status == "exploring" else "execution"
+        
+        # Extract discovery context from conversation history
+        # This helps judge understand what tools were discovered and why certain patterns are necessary
+        discovery_context = self._extract_discovery_context(conversation_history)
+        
+        # Unified context object to track state
+        judge_context = {
+            "user_query": user_query,
+            "stage": stage,
+            "code_reasoning": code_reasoning,
+            "discovery_context": discovery_context
+        }
         
         # PRE_EXECUTION Variables initialization:
-        pre_execution_judge_messages = [{'role': 'assistant', 'content': response["code"]}]
+        # Format: user query, code reasoning, stage, discovery context, and code
+        discovery_summary = self._format_discovery_context_for_judge(discovery_context)
+        pre_execution_judge_messages = [
+            {'role': 'user', 'content': f"USER_QUERY: {user_query}\nSTAGE: {stage}\nCODE_REASONING: {code_reasoning}\n\nDISCOVERY_CONTEXT:\n{discovery_summary}"},
+            {'role': 'assistant', 'content': f"GENERATED_CODE:\n{generated_code}"}
+        ]
         pre_execution_code_messages = []
         
 
-        # List of objects for post execution judge messages:
-        # { role: user, content: user_query }
-        # { role: 'user', 'current_stage_reasoning': 'reasoning_on_current_stage' }
-        # { role: 'system', 'execution_result': 'execution_result_of_current_stage' }
-
         # POST_EXECUTION Variables initialization:
-        post_execution_judge_messages = [user_message]
+        # Format: user query, code reasoning, stage, execution results
+        post_execution_judge_messages = []
         
         judge_token_usage_list = []
         code_generation_token_usage_list = []
@@ -134,13 +154,23 @@ class RealMCPOrchestrator:
                 return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
             
             if not pre_execution_judge_response['status']:
+                # Extract code from the last message (it's in GENERATED_CODE format)
+                last_code_content = pre_execution_judge_messages[-1].get('content', '')
+                # Extract code if it's in GENERATED_CODE: format, otherwise use as-is
+                if 'GENERATED_CODE:' in last_code_content:
+                    last_code = last_code_content.split('GENERATED_CODE:\n', 1)[1] if 'GENERATED_CODE:\n' in last_code_content else last_code_content
+                else:
+                    last_code = last_code_content
+                
                 pre_execution_code_messages.extend([{'role': 'assistant', 
                                                     'content': json.dumps(
                                                     {   
-                                                        'last_code': pre_execution_judge_messages[-1].get('code', ''),
+                                                        'last_code': last_code,
                                                         'code_failures': pre_execution_judge_response["reasoning"]
                                                     }, indent=2)
                                                     } ] )
+                
+                # Reset pre-execution judge messages for next iteration
                 try:
                     code_generation_response = await self.agent.generate_code_with_history(pre_execution_code_messages)
                     code_generation_token_usage_list.append(code_generation_response["token_usage"])
@@ -148,21 +178,34 @@ class RealMCPOrchestrator:
                     logger.error(f"Error in multi turn judge: code generation response: {e}")
                     return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
                 
-                pre_execution_judge_messages.extend([{'role': 'assistant',
-                                                      'content': code_generation_response["code"]}])
+                # Update context with new code and reasoning
+                new_code_reasoning = code_generation_response.get("reasoning", "")
+                judge_context["code_reasoning"] = new_code_reasoning
+                
+                # Rebuild pre-execution judge messages with updated code (include discovery context)
+                pre_execution_judge_messages = [
+                    {'role': 'user', 'content': f"USER_QUERY: {judge_context['user_query']}\nSTAGE: {judge_context['stage']}\nCODE_REASONING: {new_code_reasoning}\n\nDISCOVERY_CONTEXT:\n{discovery_summary}"},
+                    {'role': 'assistant', 'content': f"GENERATED_CODE:\n{code_generation_response['code']}"}
+                ]
                 continue
             
-            passed_code = pre_execution_judge_messages[-1].get("content", '')
+            # Extract passed code from the last message
+            passed_code_content = pre_execution_judge_messages[-1].get("content", '')
+            if 'GENERATED_CODE:' in passed_code_content:
+                passed_code = passed_code_content.split('GENERATED_CODE:\n', 1)[1] if 'GENERATED_CODE:\n' in passed_code_content else passed_code_content
+            else:
+                passed_code = passed_code_content
 
 
             # Pre execution success, Execute the code.
             execution_result = await self._docker_executor.execute_async(passed_code)
             
-            # Execution result among with original user query.
-            post_execution_judge_messages.extend([{'role': 'user',
-                                                   'content': pre_execution_judge_response.get('reasoning', '')},
-                                                  {'role': 'system',
-                                                   'content': [execution_result]}])
+            # Build post-execution judge messages with all required context
+            # Format: user query, code reasoning, stage, and execution results
+            post_execution_judge_messages = [
+                {'role': 'user', 'content': f"USER_QUERY: {judge_context['user_query']}\nSTAGE: {judge_context['stage']}\nCURRENT_STAGE_REASONING: {judge_context['code_reasoning']}"},
+                {'role': 'system', 'content': f"EXECUTION_RESULTS:\n{execution_result.get('output', '')}"}
+            ]
             try:
                 post_execution_judge_response = await self.judge.judge_code_and_execution_results(post_execution_judge_messages)
             except Exception as e:
@@ -180,10 +223,11 @@ class RealMCPOrchestrator:
                             "final_reasoning": post_execution_judge_response["reasoning"], # Provide why the judge failed.
                             "tokens": self._calculate_total_tokens(judge_token_usage_list + code_generation_token_usage_list) }
                 else:
+                    # Post-execution failed, need to generate new code
                     pre_execution_code_messages.extend([{'role': 'assistant', 'content': post_execution_judge_response["reasoning"]}])
                     
                     try:
-                        # Generating code for next iteration, instead of the respone code.
+                        # Generating code for next iteration
                         code_generation_response = await self.agent.generate_code_with_history(pre_execution_code_messages)
                         code_generation_token_usage_list.append(code_generation_response["token_usage"])
                     except Exception as e:
@@ -194,8 +238,15 @@ class RealMCPOrchestrator:
                                 "final_reasoning": post_execution_judge_response["reasoning"],
                                 "tokens": self._calculate_total_tokens(judge_token_usage_list + code_generation_token_usage_list) }
 
-
-                    pre_execution_judge_messages.extend([{'role': 'assistant', 'content': code_generation_response["code"]}])
+                    # Update context with new code and reasoning
+                    new_code_reasoning = code_generation_response.get("reasoning", "")
+                    judge_context["code_reasoning"] = new_code_reasoning
+                    
+                    # Rebuild pre-execution judge messages with updated code (include discovery context)
+                    pre_execution_judge_messages = [
+                        {'role': 'user', 'content': f"USER_QUERY: {judge_context['user_query']}\nSTAGE: {judge_context['stage']}\nCODE_REASONING: {new_code_reasoning}\n\nDISCOVERY_CONTEXT:\n{discovery_summary}"},
+                        {'role': 'assistant', 'content': f"GENERATED_CODE:\n{code_generation_response['code']}"}
+                    ]
                     continue
             
             return {"success": True, 
@@ -205,7 +256,7 @@ class RealMCPOrchestrator:
                     "tokens": self._calculate_total_tokens(judge_token_usage_list + code_generation_token_usage_list) }
     
             
-    async def run_multi_turn_code_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
+    async def run_multi_turn_code_async(self, user_query: str, max_turns: int = 3, use_judge: bool = False) -> Dict[str, Any]:
         """
         Run multi-turn conversation with status-based loop.
         
@@ -215,6 +266,7 @@ class RealMCPOrchestrator:
         Args:
             user_query: User's natural language request
             max_turns: Maximum number of turns to prevent infinite loops
+            use_judge: Whether to use LLM as judge for code safety checks
             
         Returns:
             Dictionary containing:
@@ -285,11 +337,20 @@ class RealMCPOrchestrator:
                 break
             
             else:
-                # Refactor point
-                judge_result = await self.run_multi_turn_judge_async(user_message, response, llm_call_number, max_turns=3)
-                execution_result = judge_result["execution_result"]
-                response["code"] = judge_result["code"]
-                turn_token_usage_list.append(judge_result["tokens"])
+                # Execute code - with or without judge based on use_judge flag
+                if use_judge:
+                    # Use judge flow for safety checks
+                    judge_result = await self.run_multi_turn_judge_async(user_message, response, llm_call_number, messages, max_turns=3)
+                    execution_result = judge_result["execution_result"]
+                    response["code"] = judge_result["code"]
+                    turn_token_usage_list.append(judge_result["tokens"])
+                else:
+                    # Execute code directly without judge
+                    logger.info(f"\n{'=' * 80}\nEXECUTING CODE WITHOUT JUDGE (Call {llm_call_number})\n{'=' * 80}")
+                    execution_result = await self._docker_executor.execute_async(response["code"])
+                    logger.info(f"\nExecution Result:\n{'-' * 80}\n{execution_result.get('output', '')}\n{'-' * 80}")
+                    if execution_result.get('error'):
+                        logger.error(f"\nError: {execution_result['error']}")
                 
 
             # Track execution output for final summarization
@@ -484,13 +545,127 @@ class RealMCPOrchestrator:
         # Return list of all LLM call details
         return llm_calls
 
+    def _extract_discovery_context(self, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Extract discovery-related information from conversation history.
+        
+        This helps the judge understand what tools were discovered and why
+        certain code patterns (like database queries) are necessary.
+        
+        Args:
+            conversation_history: Full conversation history
+            
+        Returns:
+            Dictionary containing discovery information
+        """
+        discovery = {
+            "servers_discovered": False,
+            "tool_documentation_read": False,
+            "discovery_execution_results": [],
+            "tool_names_found": []
+        }
+        
+        for msg in conversation_history:
+            if msg.get("role") == "assistant":
+                try:
+                    content = msg.get("content", "")
+                    # Try to parse as JSON (code agent responses are JSON)
+                    try:
+                        content_dict = json.loads(content)
+                        code = content_dict.get("code", "")
+                        reasoning = content_dict.get("reasoning", "")
+                    except (json.JSONDecodeError, TypeError):
+                        # If not JSON, treat as plain text
+                        code = content
+                        reasoning = ""
+                    
+                    # Check if this turn discovered servers
+                    if "directory_tree" in code and "./servers" in code:
+                        discovery["servers_discovered"] = True
+                    
+                    # Check if tool documentation was read
+                    if "read_text_file" in code and ".md" in code and "servers/" in code:
+                        discovery["tool_documentation_read"] = True
+                        # Try to extract tool names from code
+                        import re
+                        tool_matches = re.findall(r'servers/([^/]+)/([^/]+)\.md', code)
+                        for server, tool in tool_matches:
+                            tool_name = f"{server}.{tool}"
+                            if tool_name not in discovery["tool_names_found"]:
+                                discovery["tool_names_found"].append(tool_name)
+                    
+                    # Check reasoning for discovery mentions
+                    if reasoning and any(keyword in reasoning.lower() for keyword in ["discover", "read documentation", "tool", "server"]):
+                        discovery["tool_documentation_read"] = True
+                        
+                except Exception as e:
+                    logger.debug(f"Error parsing assistant message for discovery: {e}")
+                    continue
+                    
+            elif msg.get("role") == "user":
+                content = msg.get("content", "")
+                # Check if this is an execution result that contains discovery information
+                if "Execution result" in content or "execution" in content.lower():
+                    # Look for server/tool discovery patterns in execution results
+                    if "./servers" in content or "servers/" in content:
+                        # Extract relevant portion (first 800 chars to avoid token bloat)
+                        result_snippet = content[:800]
+                        if result_snippet not in discovery["discovery_execution_results"]:
+                            discovery["discovery_execution_results"].append(result_snippet)
+        
+        return discovery
+
+    def _format_discovery_context_for_judge(self, discovery_context: Dict[str, Any]) -> str:
+        """
+        Format discovery context for judge consumption.
+        
+        Args:
+            discovery_context: Discovery context dictionary
+            
+        Returns:
+            Formatted string for judge prompt
+        """
+        if not any([
+            discovery_context.get("servers_discovered"),
+            discovery_context.get("tool_documentation_read"),
+            discovery_context.get("discovery_execution_results")
+        ]):
+            return "No discovery context available yet - this may be the first turn."
+        
+        summary_parts = []
+        
+        if discovery_context.get("servers_discovered"):
+            summary_parts.append("- Servers have been discovered in previous turns")
+        
+        if discovery_context.get("tool_documentation_read"):
+            summary_parts.append("- Tool documentation has been read in previous turns")
+            if discovery_context.get("tool_names_found"):
+                tools = ", ".join(discovery_context["tool_names_found"][:5])  # Limit to 5 tools
+                summary_parts.append(f"  Tools discovered: {tools}")
+        
+        if discovery_context.get("discovery_execution_results"):
+            count = len(discovery_context["discovery_execution_results"])
+            summary_parts.append(f"- Discovery execution results available from {count} previous turn(s)")
+            # Include a sample of discovery results (limit to 2 to avoid token bloat)
+            for i, result in enumerate(discovery_context["discovery_execution_results"][:2], 1):
+                # Truncate to 300 chars per result
+                truncated_result = result[:300] + "..." if len(result) > 300 else result
+                summary_parts.append(f"  Sample discovery result {i}: {truncated_result}")
+        
+        summary = "\n".join(summary_parts)
+        
+        # Add important note for judge
+        summary += "\n\nIMPORTANT: If the code uses tools that were discovered in previous turns and follows their documented interface, and the tool documentation doesn't mention sanitization options, then lack of sanitization in the code is acceptable - it's the only way to use the tool."
+        
+        return summary
+
     def _calculate_total_tokens(self, token_usage_list: list) -> Dict[str, int]:
         """
         Calculate total token usage across all LLM calls.
         
         Args:
             token_usage_list: List of token usage dictionaries
-            
+        
         Returns:
             Dictionary with total prompt_tokens, completion_tokens, and total_tokens
         """

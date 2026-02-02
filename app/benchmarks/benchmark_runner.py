@@ -46,7 +46,8 @@ class BenchmarkRunner:
         self, 
         task: Dict[str, Any],
         max_turns: int = 3,
-        approaches: List[str] = None
+        approaches: List[str] = None,
+        use_judge: bool = False
     ) -> Dict[str, Any]:
         """
         Run a single task on selected benchmarks and return comparison results.
@@ -86,10 +87,11 @@ class BenchmarkRunner:
         
         # Run Code Execution MCP benchmark if selected
         if "code_execution" in approaches:
-            logger.info("Running Code Execution MCP approach...")
+            logger.info(f"Running Code Execution MCP approach... (use_judge: {use_judge})")
             code_exec_result = await self.code_execution_benchmark.run_benchmark_async(
                 query=user_query,
-                max_turns=max_turns
+                max_turns=max_turns,
+                use_judge=use_judge
             )
         else:
             logger.info("Skipping Code Execution MCP approach")
@@ -163,7 +165,8 @@ class BenchmarkRunner:
         self,
         tasks: List[Dict[str, Any]],
         max_turns: int = 3,
-        approaches: List[str] = None
+        approaches: List[str] = None,
+        use_judge: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Run all tasks on selected benchmarks.
@@ -172,6 +175,7 @@ class BenchmarkRunner:
             tasks: List of task dictionaries
             max_turns: Maximum number of LLM turns for code execution approach
             approaches: List of approaches to run - ["code_execution"], ["traditional"], or both
+            use_judge: Whether to use LLM as judge for code execution (CE only)
             
         Returns:
             List of result dictionaries for each task
@@ -190,7 +194,7 @@ class BenchmarkRunner:
         
         for task in tasks:
             try:
-                result = await self.run_task_on_both_benchmarks(task, max_turns, approaches)
+                result = await self.run_task_on_both_benchmarks(task, max_turns, approaches, use_judge)
                 results.append(result)
             except Exception as e:
                 logger.error(f"Error running task {task.get('task_id')}: {str(e)}")

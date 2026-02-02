@@ -210,7 +210,7 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
     4. Returns benchmark results
     
     Args:
-        request: QueryRequest containing the user query
+        request: QueryRequest containing the user query and use_judge flag
         
     Returns:
         BenchmarkResponse with execution results
@@ -220,10 +220,13 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
     """
     try:
         # Log the benchmark request
-        logger.info(f"Running Code Execution MCP benchmark for query: {request.query}")
+        logger.info(f"Running Code Execution MCP benchmark for query: {request.query}, use_judge: {request.use_judge}")
         
         # Run the benchmark with user query using benchmarkRunner's instance
-        result = await benchmarkRunner.code_execution_benchmark.run_benchmark_async(request.query)
+        result = await benchmarkRunner.code_execution_benchmark.run_benchmark_async(
+            query=request.query,
+            use_judge=request.use_judge
+        )
         
         # Save benchmark results to JSON file
         storage.save_result(
@@ -331,7 +334,8 @@ async def run_multiple_benchmarks(request: MultiTaskRequest):
         results = await benchmarkRunner.run_all_tasks(
             tasks=tasks,
             max_turns=request.max_turns,
-            approaches=request.approaches
+            approaches=request.approaches,
+            use_judge=request.use_judge
         )
         
         # Calculate summary statistics

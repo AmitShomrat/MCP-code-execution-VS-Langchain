@@ -665,6 +665,12 @@ let multiTokenChart = null;
  * Initialize multi-task mode event listeners
  */
 function initializeMultiTaskMode() {
+    // Initialize judge option visibility based on default selection (both)
+    const judgeOptionContainer = document.getElementById('judgeOptionContainer');
+    if (judgeOptionContainer) {
+        // Show by default since "both" includes CE
+        judgeOptionContainer.style.display = 'block';
+    }
     console.log('Initializing multi-task mode...');
     
     const singleMode = document.getElementById('singleTaskMode');
@@ -729,6 +735,22 @@ function initializeMultiTaskMode() {
                 // Update selected approach
                 selectedApproach = btn.dataset.approach;
                 console.log('Selected approach:', selectedApproach);
+                
+                // Show/hide judge option based on approach selection
+                const judgeOptionContainer = document.getElementById('judgeOptionContainer');
+                if (judgeOptionContainer) {
+                    // Show judge option only when CE is selected (either "code_execution" or "both")
+                    if (selectedApproach === 'code_execution' || selectedApproach === 'both') {
+                        judgeOptionContainer.style.display = 'block';
+                    } else {
+                        judgeOptionContainer.style.display = 'none';
+                        // Uncheck the checkbox when hiding
+                        const useJudgeCheckbox = document.getElementById('useJudgeCheckbox');
+                        if (useJudgeCheckbox) {
+                            useJudgeCheckbox.checked = false;
+                        }
+                    }
+                }
                 
                 // Update UI visibility based on selection (if results are displayed)
                 const resultsSection = document.getElementById('multiTaskResults');
@@ -1060,6 +1082,10 @@ async function runAllTasks() {
         }
     });
     
+    // Get use_judge checkbox value (only relevant for CE)
+    const useJudgeCheckbox = document.getElementById('useJudgeCheckbox');
+    const useJudge = useJudgeCheckbox ? useJudgeCheckbox.checked : false;
+    
     showLoading(`Running ${tasks.length} benchmark tasks...`);
     disableButtons();
     document.getElementById('runAllTasksBtn').disabled = true;
@@ -1076,7 +1102,8 @@ async function runAllTasks() {
                 max_turns: maxTurns,
                 approaches: selectedApproachValue === 'both' ? ['code_execution', 'traditional'] : 
                            selectedApproachValue === 'code_execution' ? ['code_execution'] : 
-                           ['traditional']
+                           ['traditional'],
+                use_judge: useJudge
             })
         });
         

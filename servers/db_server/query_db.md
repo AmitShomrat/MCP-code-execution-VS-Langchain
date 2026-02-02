@@ -1,34 +1,21 @@
 # db_server.query_db
 
-Executes safe SQL queries on the database. Only SELECT queries are allowed.
+Executes safe SQL queries on the database. Only SELECT queries are allowed. inverse is the complementary query to the original query default is False.
 
 ## Input Schema
 ```json
 {
-  "$defs": {
-    "QueryRequest": {
-      "properties": {
-        "query": {
-          "type": "string"
-        },
-        "inverse": {
-          "default": false,
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "query"
-      ],
-      "type": "object"
-    }
-  },
   "properties": {
-    "request": {
-      "$ref": "#/$defs/QueryRequest"
+    "query": {
+      "type": "string"
+    },
+    "inverse": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
-    "request"
+    "query"
   ],
   "type": "object"
 }
@@ -36,5 +23,5 @@ Executes safe SQL queries on the database. Only SELECT queries are allowed.
 
 ## Example Usage
 ```python
-mcp_call_http(name="db_server.query_db", args={"request": "<value>"})
+mcp_call_http(name="db_server.query_db", args={"query": "<string>", "inverse": False})
 ```

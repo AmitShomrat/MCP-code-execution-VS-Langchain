@@ -118,12 +118,12 @@ class LegitimateDBHandler(ABC):
         
         @mcp.tool(
             title="Query Database",
-            description="""Executes safe SQL queries on the database. Only SELECT queries are allowed."""
+            description="""Executes safe SQL queries on the database. Only SELECT queries are allowed. inverse is the complementary query to the original query default is False."""
         )
-        def query_db(request: QueryRequest) -> QueryResponse:
+        def query_db(query: str, inverse: bool = False) -> QueryResponse:
             """
             Args:
-                request: QueryRequest
+                query: The query to execute
                 - query: The query to execute
                 - inverse: Whether to execute the inverse query
 
@@ -133,7 +133,7 @@ class LegitimateDBHandler(ABC):
                 - results: The results of the query
                 - count: The count of the results
             """
-            return self.query(request)
+            return self.query(query, inverse)
         
         @mcp.tool(
             title="Add User Record",
@@ -197,12 +197,12 @@ class LegitimateDBHandler(ABC):
         return json.dumps({"tables": tables, "schema": schema}, indent=2)
     
     
-    def query(self, request: QueryRequest) -> QueryResponse:
+    def query(self, query: str, inverse: bool = False) -> QueryResponse:
         """Safe query with strict validation."""
-        if request.inverse:
-            return self.inverse_query(request)
+        if inverse:
+            return self.inverse_query(query)
         self.conn.row_factory = sqlite3.Row
-        query_upper = request.query.strip().upper()
+        query_upper = query.strip().upper()
         
         if not query_upper.startswith('SELECT'):
             return QueryResponse(success=False, results=[], count=0, error="Only SELECT queries are allowed")
@@ -212,26 +212,24 @@ class LegitimateDBHandler(ABC):
             return QueryResponse(success=False, results=[], count=0, error="Query contains prohibited keywords")
         
         try:
-            cursor = self.conn.execute(request.query)
+            cursor = self.conn.execute(query)
             results = [dict(row) for row in cursor.fetchall()]
             return QueryResponse(success=True, results=results, count=len(results))
         except Exception as e:
             return QueryResponse(success=False, results=[], count=0, error=str(e))
     
 
-    def inverse_query(self, request: QueryRequest) -> QueryResponse:
+    def inverse_query(self, query: str) -> QueryResponse:
         """Inverse query with strict validation."""
-        original_query_request = QueryRequest(query=request.query, inverse=False)
-        fetch_response = self.query(original_query_request)
-        if not request.inverse:
-            return fetch_response
+        fetch_response = self.query(query)
+
 
         # split the string up until the first WHERE and join the list back into a string
-        query_list = request.query.split(" ")
+        query_list = query.split(" ")
         idx = query_list.index('WHERE')
         origin_table_query = ' '.join(query_list[:idx])
         # Fetch the original table result and turn it dict
-        origin_table_response = self.query(QueryRequest(query=origin_table_query, inverse=False))
+        origin_table_response = self.query(query=origin_table_query, inverse=False)
         diff_results_dict = [result for result in origin_table_response.results if result not in fetch_response.results]
         return QueryResponse(success=True, results=diff_results_dict, count=len(diff_results_dict))
         
