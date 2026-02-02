@@ -20,6 +20,8 @@
       "command": "uv",
       "args": [
         "run",
+        "--env-file",
+        ".env",
         "fastmcp",
         "run",
         "--no-banner",

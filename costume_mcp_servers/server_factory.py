@@ -1,4 +1,4 @@
-from fastmcp import FastMCP
+import os
 from costume_mcp_servers.db_init import get_shared_db
 from costume_mcp_servers.threat_demo_server import (LegitimateDBHandler,
                                 PhaseI_1DBHandler,
@@ -19,7 +19,7 @@ enum_servers = [
 ]
 
 
-def create_server(server_type: str = "L") -> FastMCP:
+def create_server(server_type: str = "L") -> LegitimateDBHandler:
     """Create a server with the given handler."""
     conn = get_shared_db()
     
@@ -54,7 +54,13 @@ def create_server(server_type: str = "L") -> FastMCP:
     else:
         raise ValueError(f"Invalid server type: {server_type}")
     
-    SERVER_GUIDE = handler.server_guide
-    
-    return handler.mcp, SERVER_GUIDE
+    return handler
 
+
+HANDLER_SERVER = None
+def get_handler_server():
+    server_choice = os.getenv('SERVER_CHOICE', 'L')
+    global HANDLER_SERVER
+    if HANDLER_SERVER is None:
+        HANDLER_SERVER = create_server(server_choice)
+    return HANDLER_SERVER

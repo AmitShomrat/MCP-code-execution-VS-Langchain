@@ -8,6 +8,28 @@ import sys
 import asyncio
 import uvicorn
 import os
+def server_selection():
+    from dotenv import set_key, find_dotenv
+    from costume_mcp_servers.server_factory import enum_servers
+    """Select a server from the list of available MCP threat servers."""
+    dotenv_path = find_dotenv()
+
+    print("\nAvailable MCP servers:")
+    for i, server in enumerate(enum_servers):
+        print(f"  {i + 1}. {server['name']} - {server['description']}")
+    choice = input("Enter the number of the server you want to use: ").strip()
+
+    if not choice.isdigit():
+        print("\nInvalid choice. Please enter a valid number.")
+        return server_selection()
+
+    idx = int(choice)
+    if idx not in range(1, len(enum_servers) + 1):
+        print("\nInvalid choice. Please enter a valid number.")
+        return server_selection()
+
+    set_key(dotenv_path, "SERVER_CHOICE", enum_servers[idx - 1]["value"])
+    print(f"SERVER_CHOICE: {enum_servers[idx - 1]['value']}")
 
 def print_banner():
     """Print welcome banner."""
@@ -114,35 +136,35 @@ def start_dashboard(dev_mode: bool = False):
 def main():
     """Main launcher function."""
     # Set MCP server choice at launch.
-    from app.config.settings import server_selection
-
-    os.environ["SERVER_CHOICE"] = server_selection()
-
     while True:
         print_banner()
         print_menu()
         
         try:
             choice = input("Enter your choice (1-2): ").strip()
-            
             if choice == "1":
+                server_selection() # Setting Threat server handler.
                 start_dashboard()
                 break
             
             elif choice == "2":
+                server_selection()
                 start_dashboard(dev_mode=True)
                 break
 
             elif choice == "3":
                 print("\nGoodbye! 👋\n")
                 sys.exit(0)
+                
             else:
                 print("\n❌ Invalid choice. Please enter 1, 2 or 3.\n")
                 input("Press Enter to continue...")
                 print("\n" * 2)
+        
         except KeyboardInterrupt:
             print("\n\nGoodbye! 👋\n")
             sys.exit(0)
+        
         except Exception as e:
             print(f"\n❌ Error: {str(e)}\n")
             input("Press Enter to continue...")
