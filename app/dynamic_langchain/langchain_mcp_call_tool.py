@@ -22,8 +22,7 @@ async def mcp_call(name: str, args: Dict[str, Any]) -> Any:
     logger.info(f"mcp_call: name={name}, args={args}")
     server_name, tool_name = name.split(".", 1)
 
-    mcp = get_mcp_client()
-    await mcp.initialize()
+    mcp = await get_mcp_client()
 
     result = await mcp.call_tool(server_name=server_name, tool_name=tool_name, arguments=args)
 
