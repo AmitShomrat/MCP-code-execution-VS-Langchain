@@ -9,5 +9,5 @@ Get a recursive tree view of files and directories as a JSON structure. Each ent
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.directory_tree", args={"path": "<string>", "excludePatterns": []})
+mcp_call(name="filesystem.directory_tree", args={"path": "<string>", "excludePatterns": []})
 ```

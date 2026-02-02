@@ -19,7 +19,7 @@ from app.config import OPENAI_MODEL
 
 # Dynamic MCP tools
 from app.dynamic_langchain.langchain_mcp_call_tool import mcp_call
-from app.dynamic_langchain.mcp_cataloge import build_mcp_tool_catalog
+from app.core.tools_generator import generate_mcp_tool_descriptions_and_catalog
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
@@ -67,8 +67,8 @@ class TraditionalMCPBenchmark:
         """
         # Initialize MCP client and connect to filesystem server
         await self.mcp_client.initialize()
-        self.mcp_tool_catalog = await build_mcp_tool_catalog()
-        # logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
+        self.mcp_tool_catalog = await generate_mcp_tool_descriptions_and_catalog()
+        logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
 
         
     async def run_benchmark_async(self, query: str) -> Dict[str, Any]:

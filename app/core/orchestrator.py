@@ -10,10 +10,14 @@ import time
 import json
 
 # Application imports
-from app.core import get_mcp_client, CodeExecutor, OpenAICodeAgent, DockerCodeExecutor, generate_mcp_tool_descriptions
+from app.core import get_mcp_client, OpenAICodeAgent, DockerCodeExecutor, generate_mcp_tool_descriptions
 from app.utils import ResultLogger
 from app.app_logging.logger import setup_logger
-from app.config import CODE_EXECUTION_TIMEOUT, MCP_CONFIG_PATH
+from app.config import (CODE_EXECUTION_TIMEOUT,
+                        MCP_CONFIG_PATH,
+                        DOCKER_IMAGE_NAME,
+                        DOCKER_MCP_GATEWAY)
+
 
 # Initialize logger for tracking orchestration operations
 logger = setup_logger(__name__)
@@ -29,25 +33,22 @@ class RealMCPOrchestrator:
     5. Collecting and returning results
     """
 
-    def __init__(self, mcp_config_path: str = None):
+    def __init__(self):
         """
         Initialize orchestrator with MCP configuration.
         
         Args:
             mcp_config_path: Path to MCP configuration file. If None, uses default from config.
         """
-        # Use default config path if none provided
-        if mcp_config_path is None:
-            mcp_config_path = MCP_CONFIG_PATH
         
         # Initialize MCP client for connecting to MCP servers
-        self.mcp_client = get_mcp_client(mcp_config_path)
+        self.mcp_client = get_mcp_client(MCP_CONFIG_PATH)
         
         # Initialize code executor with timeout configuration
         # self.code_executor = CodeExecutor(timeout=CODE_EXECUTION_TIMEOUT)
 
-        self.docker_executor = DockerCodeExecutor(image="code_execution_sandbox:v2",
-                                                  gateway_url="http://host.docker.internal:8080",
+        self.docker_executor = DockerCodeExecutor(image=DOCKER_IMAGE_NAME,
+                                                  gateway_url=DOCKER_MCP_GATEWAY,
                                                   timeout_s=CODE_EXECUTION_TIMEOUT)
         
         # Initialize OpenAI agent for code generation

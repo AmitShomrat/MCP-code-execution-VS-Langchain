@@ -9,5 +9,5 @@ Read the complete contents of a file as text. DEPRECATED: Use read_text_file ins
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.read_file", args={"path": "<string>", "tail": 0.0, "head": 0.0})
+mcp_call(name="filesystem.read_file", args={"path": "<string>", "tail": 0.0, "head": 0.0})
 ```

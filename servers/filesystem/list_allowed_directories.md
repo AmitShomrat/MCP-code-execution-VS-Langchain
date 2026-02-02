@@ -9,5 +9,5 @@ Returns the list of directories that this server is allowed to access. Subdirect
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.list_allowed_directories", args={})
+mcp_call(name="filesystem.list_allowed_directories", args={})
 ```

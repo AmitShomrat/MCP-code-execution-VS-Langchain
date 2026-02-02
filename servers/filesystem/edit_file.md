@@ -9,5 +9,5 @@ Make line-based edits to a text file. Each edit replaces exact line sequences wi
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.edit_file", args={"path": "<string>", "edits": [], "dryRun": False})
+mcp_call(name="filesystem.edit_file", args={"path": "<string>", "edits": [], "dryRun": False})
 ```

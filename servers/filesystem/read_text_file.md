@@ -9,5 +9,5 @@ Read the complete contents of a file from the file system as text. Handles vario
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.read_text_file", args={"path": "<string>", "tail": 0.0, "head": 0.0})
+mcp_call(name="filesystem.read_text_file", args={"path": "<string>", "tail": 0.0, "head": 0.0})
 ```

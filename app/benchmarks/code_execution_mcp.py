@@ -9,6 +9,7 @@ from typing import Dict, Any
 from app.core.orchestrator import RealMCPOrchestrator
 from app.app_logging.logger import setup_logger
 
+
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
 
@@ -35,7 +36,7 @@ class CodeExecutionBenchmark:
             mcp_config_path: Path to MCP configuration file (optional)
         """
         # Create orchestrator instance with optional config path
-        self.orchestrator = RealMCPOrchestrator(mcp_config_path=mcp_config_path)
+        self.orchestrator = RealMCPOrchestrator()
         
         # Log initialization
         logger.info("Code Execution MCP Benchmark initialized")

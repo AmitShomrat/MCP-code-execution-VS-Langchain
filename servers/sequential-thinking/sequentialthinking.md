@@ -62,5 +62,5 @@ You should:
 
 ## Example Usage
 ```python
-mcp_call_http(name="sequential-thinking.sequentialthinking", args={"thought": "<string>", "nextThoughtNeeded": False, "thoughtNumber": 0, "totalThoughts": 0, "isRevision": False, "revisesThought": 0, "branchFromThought": 0, "branchId": "<string>", "needsMoreThoughts": False})
+mcp_call(name="sequential-thinking.sequentialthinking", args={"thought": "<string>", "nextThoughtNeeded": False, "thoughtNumber": 0, "totalThoughts": 0, "isRevision": False, "revisesThought": 0, "branchFromThought": 0, "branchId": "<string>", "needsMoreThoughts": False})
 ```

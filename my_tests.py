@@ -49,7 +49,7 @@ asyncio.run(test_mcp_client())
 
 # To do:
 # - Have to unify the dynamic tools description for both traditional (up front) and the generated servers files description for code exec.
-# - remove old irrelevant files from the project, once everything is tied and work properly.
-# - make a single env's for docker image name and gateway route.
+# - remove old irrelevant files from the project, once everything is tied and work properly. (checked)
+# - make a single env's for docker image name and gateway route. (checked)
 # - make sure everything is documented.
 # - create the entire workflow scheme diagram.

@@ -9,5 +9,5 @@ Move or rename files and directories. Can move files between directories and ren
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.move_file", args={"source": "<string>", "destination": "<string>"})
+mcp_call(name="filesystem.move_file", args={"source": "<string>", "destination": "<string>"})
 ```

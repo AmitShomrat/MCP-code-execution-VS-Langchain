@@ -9,5 +9,5 @@ Recursively search for files and directories matching a pattern. The patterns sh
 
 ## Example Usage
 ```python
-mcp_call_http(name="filesystem.search_files", args={"path": "<string>", "pattern": "<string>", "excludePatterns": []})
+mcp_call(name="filesystem.search_files", args={"path": "<string>", "pattern": "<string>", "excludePatterns": []})
 ```
