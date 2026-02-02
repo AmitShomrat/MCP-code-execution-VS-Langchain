@@ -163,11 +163,11 @@ async def run_traditional_mcp_benchmark(request: QueryRequest):
         logger.info(f"Running Traditional MCP benchmark for query: {request.query}")
         
         # Create and initialize benchmark instance
-        benchmark = TraditionalMCPBenchmark()
-        await benchmark.initialize_async()
+        # benchmark = TraditionalMCPBenchmark()
+        # await benchmark.initialize_async()
         
         # Run the benchmark with user query
-        result = await benchmark.run_benchmark_async(request.query)
+        result = await traditionalMCPBenchmark.run_benchmark_async(request.query)
         
         # Save benchmark results to JSON file
         storage.save_result(
