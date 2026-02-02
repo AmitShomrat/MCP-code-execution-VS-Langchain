@@ -10,7 +10,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from app.core.mcp_client import get_mcp_client
+from app.core import get_mcp_client
 
 
 class CallReq(BaseModel):
@@ -38,24 +38,21 @@ def extract_text(result: Any) -> Optional[str]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _mcp_client
     print("Starting MCP gateway server")
-    mcp = get_mcp_client()
-    await mcp.initialize()
+    _mcp_client = await get_mcp_client()
     yield
 
 app = FastAPI(title="MCP Gateway", version="1.0.0", lifespan=lifespan)
 
 @app.get("/mcp/tools")
 async def tools():
-    mcp = get_mcp_client()
-    await mcp.initialize()
-
     out: List[Dict[str, Any]] = []
-    for server in mcp.get_available_servers():
-        if not mcp.is_server_connected(server):
+    for server in _mcp_client.get_available_servers():
+        if not _mcp_client.is_server_connected(server):
             print(f"Server {server} is not connected")
             continue
-        tools = await mcp.list_tools(server)
+        tools = await _mcp_client.list_tools(server)
         for t in tools:
             # tool objects vary; use getattr safely
             name = getattr(t, "name", None) or (t.get("name") if isinstance(t, dict) else None)
@@ -79,11 +76,8 @@ async def call_tool(req: CallReq, x_sandbox_token: Optional[str] = Header(defaul
 
     server, tool = req.name.split(".", 1)
 
-    mcp = get_mcp_client()
-    await mcp.initialize()
-
     async def _call():
-        return await mcp.call_tool(server_name=server, tool_name=tool, arguments=req.args)
+        return await _mcp_client.call_tool(server_name=server, tool_name=tool, arguments=req.args)
 
     try:
         result = await asyncio.wait_for(_call(), timeout=req.timeout_s)
