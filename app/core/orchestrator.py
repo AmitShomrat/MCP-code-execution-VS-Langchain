@@ -5,12 +5,12 @@ This module handles the multi-turn conversation flow between the LLM and code ex
 managing the lifecycle of MCP connections and code execution.
 """
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, List
 import time
 import json
 
 # Application imports
-from app.core import get_mcp_client, OpenAICodeAgent, get_docker_executor
+from app.core import get_mcp_client, OpenAICodeAgent, OpenAIJudge, get_docker_executor
 from app.utils import ResultLogger
 from app.app_logging.logger import setup_logger
 from app.config import (
@@ -55,6 +55,9 @@ class RealMCPOrchestrator:
         # Initialize OpenAI agent for code generation
         self.agent = OpenAICodeAgent()
 
+        # Initialize OpenAI judge for code and execution results
+        self.judge = OpenAIJudge()
+
     async def initialize_async(self):
         """
         Initialize MCP connections asynchronously.
@@ -80,44 +83,10 @@ class RealMCPOrchestrator:
         logger.info("INITIALIZATION COMPLETE")
         logger.info("=" * 80 + "\n\n")
 
-    async def run_multi_turn_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
-        """
-        Run multi-turn conversation with status-based loop.
+
+
+    async def run_multi_turn_judge_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
         
-        Implements progressive discovery approach where agent decides
-        if it needs exploration or can complete directly.
-        
-        Args:
-            user_query: User's natural language request
-            max_turns: Maximum number of turns to prevent infinite loops
-            
-        Returns:
-            Dictionary containing:
-                - success: Boolean indicating if execution was successful
-                - output: Final output from code execution
-                - error: Error message if any
-                - time: Total execution time
-                - llm_calls: List of LLM call details
-                - tokens: Token usage information
-                - conversation_history: Conversation history
-                - turn_details: Detailed turn information
-        """
-        # Start timer for total execution time tracking
-        total_start = time.time()
-        
-        # Log the user query
-        logger.info(f"\n\n{'=' * 80}\nUSER QUERY: {user_query}\n{'=' * 80}\n")
-        
-        # Initialize conversation with user query
-        messages = [{"role": "user", "content": user_query}]
-        
-        # Initialize variables for tracking results and metrics
-        final_result = None
-        turn_times = []
-        token_usage_list = []
-        execution_results = []  # Track all execution outputs for final summarization
-        
-        # Multi-turn loop: iterate up to max_turns times
         for llm_call_number in range(1, max_turns + 1):
             # Start timer for this turn
             turn_start = time.time()
@@ -125,7 +94,6 @@ class RealMCPOrchestrator:
             # Get LLM response with generated code
             response = await self._get_llm_response(llm_call_number, messages)
             
-
             # Handle case where code generation fails
             if response is None:
                 return {"success": False, "output": "", "error": "Code generation failed"}
@@ -186,6 +154,49 @@ class RealMCPOrchestrator:
                 }
                 break
             
+    async def run_multi_turn_code_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
+        """
+        Run multi-turn conversation with status-based loop.
+        
+        Implements progressive discovery approach where agent decides
+        if it needs exploration or can complete directly.
+        
+        Args:
+            user_query: User's natural language request
+            max_turns: Maximum number of turns to prevent infinite loops
+            
+        Returns:
+            Dictionary containing:
+                - success: Boolean indicating if execution was successful
+                - output: Final output from code execution
+                - error: Error message if any
+                - time: Total execution time
+                - llm_calls: List of LLM call details
+                - tokens: Token usage information
+                - conversation_history: Conversation history
+                - turn_details: Detailed turn information
+        """
+        # Start timer for total execution time tracking
+        total_start = time.time()
+        
+        # Log the user query
+        logger.info(f"\n\n{'=' * 80}\nUSER QUERY: {user_query}\n{'=' * 80}\n")
+        
+        # Initialize conversation with user query
+        messages = [{"role": "user", "content": user_query}]
+        
+        # Initialize variables for tracking results and metrics
+        final_result = None
+        turn_times = []
+        token_usage_list = []
+        execution_results = []  # Track all execution outputs for final summarization
+        
+        # Multi-turn loop: iterate up to max_turns times
+        for llm_call_number in range(1, max_turns + 1):
+            run_multi_turn_judge_async(llm_call_number, messages)
+        
+        
+        
         # Handle case where max turns reached without completion
         if final_result is None:
             logger.warning(f"\nMax turns ({max_turns}) reached")

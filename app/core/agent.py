@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from openai import OpenAI
 
 from app.app_logging.logger import setup_logger
-from app.prompts import AGENT_PROMPT, SUMMARIZATION_PROMPT
+from app.prompts import CODE_AGENT_PROMPT, SUMMARIZATION_PROMPT, JUDGE_AGENT_PROMPT
 from app.config import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
@@ -102,15 +102,16 @@ class OpenAICodeAgent(Agent):
             llm_call Exceptions errors
         """
         # Build messages array with system prompt and conversation history
-        openai_messages = [{"role": "system", "content": AGENT_PROMPT}] # The AGENT_PROMPT used while Maintenance a messeges list
+        openai_messages = [{"role": "system", "content": CODE_AGENT_PROMPT}] # The CODE_AGENT_PROMPT used while Maintenance a messeges list
         openai_messages.extend(messages)
         logger.info(f"\n\nOpenAI Messages:\n\n{json.dumps(openai_messages, indent=2)}\n")
         
 
         # Read openAI docs Response and try to bind and provide the tools def's for the agent.
         # Call OpenAI API with JSON mode to ensure structured response
+        result = None
         try:
-            result = await self.llm_call(openai_messages)
+            result = self.llm_call(openai_messages)
         except Exception as e:
             raise e
         
@@ -201,4 +202,33 @@ class OpenAICodeAgent(Agent):
 
 
 class OpenAIJudge(Agent):
-    pass
+    """Agent that judges the code and the execution results"""
+
+    async def judge_code_and_execution_results(
+        self,
+        messages: List[Dict[str, str]] # Format by the orchestrator.
+    ) -> Dict[str, Any]:
+        """
+        Judge the code and the execution results
+        """
+        openai_judge_messages = [ { "role": "system", "content": JUDGE_AGENT_PROMPT } ]
+        openai_judge_messages.extend(messages)
+        logger.info(f"\n\nOpenAI Judge Messages:\n\n{json.dumps(openai_judge_messages, indent=2)}\n")
+
+        judge_result = None
+        try:
+            judge_result = self.llm_call(openai_judge_messages)
+        except Exception as e:
+            logger.error(f"Error calling LLM: {e}")
+            raise e
+        
+        # Validate required fields are present
+        if "status" not in judge_result or "reasoning" not in judge_result:
+            raise ValueError(f"Invalid LLM response format: {judge_result}")       
+        if judge_result["status"] not in ["true", "false"]:
+            raise ValueError(f"Invalid status value: {judge_result['status']}")
+        
+        # Format real boolean value
+        judge_result["status"] = bool(judge_result["status"])
+        return judge_result
+

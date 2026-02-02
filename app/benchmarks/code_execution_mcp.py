@@ -83,7 +83,7 @@ class CodeExecutionBenchmark:
         logger.info(f"Running Code Execution MCP benchmark for query: {query}")
         
         # Run multi-turn conversation through orchestrator
-        result = await self._orchestrator.run_multi_turn_async(
+        result = await self._orchestrator.run_multi_turn_code_async(
             user_query=query,
             max_turns=max_turns
         )
