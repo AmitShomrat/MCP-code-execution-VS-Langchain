@@ -44,12 +44,12 @@ class RealMCPOrchestrator:
         """
         
         # Initialize MCP client for connecting to MCP servers
-        self.mcp_client = get_mcp_client(MCP_CONFIG_PATH)
+        self._mcp_client = get_mcp_client(MCP_CONFIG_PATH)
         
         # Initialize code executor with timeout configuration
         # self.code_executor = CodeExecutor(timeout=CODE_EXECUTION_TIMEOUT)
 
-        self.docker_executor = get_docker_executor(image=DOCKER_IMAGE_NAME,
+        self._docker_executor = get_docker_executor(image=DOCKER_IMAGE_NAME,
                                                   gateway_url=DOCKER_MCP_GATEWAY,
                                                   timeout_s=CODE_EXECUTION_TIMEOUT)
         
@@ -71,12 +71,10 @@ class RealMCPOrchestrator:
         logger.info("=" * 80 + "\n")
 
         # Initialize MCP client and connect to all configured servers
-        await self.mcp_client.initialize()
+        await self._mcp_client.initialize()
 
         # Start container for code execution
-        await self.docker_executor.start_container()
-
-    
+        await self._docker_executor.start_container()
 
         # Log initialization completion banner
         logger.info("=" * 80)
@@ -220,7 +218,7 @@ class RealMCPOrchestrator:
         
         # Execute the generated code in sandbox environment
         # execution_result = await self.code_executor.execute_async(response["code"])
-        execution_result = await self.docker_executor.execute_async(response["code"])
+        execution_result = await self._docker_executor.execute_async(response["code"])
         
         # Log the execution output
         logger.info(f"\nExecution Result:\n{'-' * 80}\n{execution_result['output']}\n{'-' * 80}")
@@ -322,14 +320,17 @@ class RealMCPOrchestrator:
     async def cleanup_async(self):
         """
         Cleanup orchestrator resources after task completion.
-        
-        NOTE: MCP client is a singleton shared across requests, so we don't close it here.
-        Docker container is kept alive for reuse across requests for better performance.
-        These resources will be cleaned up when the server shuts down.
         """
-        # Don't close MCP client - it's a singleton that should stay alive across requests
-        # Don't kill Docker container - reuse it for 10-15x faster subsequent requests
-        logger.debug("Orchestrator task completed (resources kept alive for reuse)")
+        # Log cleanup start
+        logger.info("Cleaning up Orchestrator")
 
+        # Stop Docker container
+        await self._docker_executor.cleanup()
+
+        # Close MCP client
+        await self._mcp_client.close()
+
+        # Log cleanup completion
+        logger.info("Orchestrator cleanup complete")
 
    
