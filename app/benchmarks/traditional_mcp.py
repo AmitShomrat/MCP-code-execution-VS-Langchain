@@ -14,7 +14,7 @@ from langchain.agents import create_agent
 
 # Application imports
 from app.app_logging.logger import setup_logger
-from app.core.mcp_client import get_mcp_client
+from app.core import get_mcp_client
 from app.config import OPENAI_MODEL
 
 # Dynamic MCP tools
@@ -22,6 +22,7 @@ from app.dynamic_langchain.langchain_mcp_call_tool import mcp_call
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
+
 
 
 class TraditionalMCPBenchmark:
@@ -43,8 +44,8 @@ class TraditionalMCPBenchmark:
         - Token usage tracking
         - LLM call tracking
         """
-        # Get singleton MCP client instance for filesystem operations
-        self._mcp_client = get_mcp_client()
+        # # Get singleton MCP client instance for filesystem operations
+        # self._mcp_client = get_mcp_client()
         
         # Initialize token usage tracking dictionary
         self.total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -64,7 +65,7 @@ class TraditionalMCPBenchmark:
         that provides file system tools.
         """
         # Initialize MCP client and connect to filesystem server
-        await self._mcp_client.initialize()
+        self._mcp_client = await get_mcp_client()
         self.mcp_tool_catalog = self._mcp_client.get_catalog()
         # logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
 
