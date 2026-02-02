@@ -20,10 +20,11 @@ from app.api.models import (
     HealthResponse
 )
 from app.benchmarks.traditional_mcp import TraditionalMCPBenchmark
+traditionalMCPBenchmark = TraditionalMCPBenchmark()
 from app.benchmarks.code_execution_mcp import CodeExecutionBenchmark
+codeExecutionBenchmark = CodeExecutionBenchmark()
 from app.utils import BenchmarkStorage
 from app.app_logging.logger import setup_logger
-from app.core import get_mcp_client, get_docker_executor
 
 # Initialize logger for tracking API operations
 logger = setup_logger(__name__)
@@ -43,11 +44,10 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 80)
     logger.info("FastAPI Application Starting Up")
     logger.info("=" * 80)
-    
-    # Start Docker executor
-    docker_executor = get_docker_executor()
-    await docker_executor.start_container()
-    
+
+    await codeExecutionBenchmark.initialize_async()
+    await traditionalMCPBenchmark.initialize_async()
+
     yield
     
     # Shutdown
@@ -58,18 +58,8 @@ async def lifespan(app: FastAPI):
     
     try:
         # Close MCP client singleton
-        mcp_client = get_mcp_client()
-        if mcp_client.initialized:
-            logger.info("Closing MCP client connections...")
-            await mcp_client.close()
-            logger.info("MCP connections closed")
-        
-        # Cleanup Docker executor if it exists
-        if docker_executor is not None:
-            logger.info("Stopping Docker container...")
-            await docker_executor.cleanup()
-            logger.info("Docker container stopped")
-        
+        await codeExecutionBenchmark.cleanup_async()
+        await traditionalMCPBenchmark.cleanup_async()
         logger.info("Server shutdown complete")
     except Exception as e:
         logger.error(f"Error during shutdown cleanup: {str(e)}")
@@ -186,9 +176,6 @@ async def run_traditional_mcp_benchmark(request: QueryRequest):
             result=result
         )
         
-        # Don't close MCP client - it's a singleton shared across requests
-        # It will be closed during server shutdown
-        
         # Format result to match response model
         formatted_result = storage.format_result(result)
         
@@ -233,16 +220,8 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
         # Log the benchmark request
         logger.info(f"Running Code Execution MCP benchmark for query: {request.query}")
         
-        # Create and initialize benchmark instance
-        benchmark = CodeExecutionBenchmark()
-        await benchmark.initialize_async()
-        
-        # Store Docker executor reference globally for shutdown cleanup
-        global _global_docker_executor
-        _global_docker_executor = benchmark.orchestrator.docker_executor
-        
         # Run the benchmark with user query
-        result = await benchmark.run_benchmark_async(request.query)
+        result = await codeExecutionBenchmark.run_benchmark_async(request.query)
         
         # Save benchmark results to JSON file
         storage.save_result(
@@ -250,9 +229,6 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
             query=request.query,
             result=result
         )
-        
-        # Cleanup resources (doesn't close shared MCP/Docker - they stay alive)
-        await benchmark.cleanup_async()
         
         # Format result to match response model
         formatted_result = storage.format_result(result)
