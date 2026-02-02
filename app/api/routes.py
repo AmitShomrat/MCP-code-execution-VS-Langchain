@@ -6,6 +6,7 @@ retrieving results, and serving the web interface.
 """
 from pathlib import Path
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +23,7 @@ from app.benchmarks.traditional_mcp import TraditionalMCPBenchmark
 from app.benchmarks.code_execution_mcp import CodeExecutionBenchmark
 from app.utils import BenchmarkStorage
 from app.app_logging.logger import setup_logger
+from app.core import get_mcp_client, get_docker_executor
 
 # Initialize logger for tracking API operations
 logger = setup_logger(__name__)
@@ -29,13 +31,57 @@ logger = setup_logger(__name__)
 # Initialize benchmark storage handler
 storage = BenchmarkStorage()
 
-# Create FastAPI application instance with metadata
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Manage application lifecycle - startup and shutdown.
+    
+    Startup: Log server initialization
+    Shutdown: Cleanup MCP connections and Docker containers
+    """
+    # Startup
+    logger.info("=" * 80)
+    logger.info("FastAPI Application Starting Up")
+    logger.info("=" * 80)
+    
+    # Start Docker executor
+    docker_executor = get_docker_executor()
+    await docker_executor.start_container()
+    
+    yield
+    
+    # Shutdown
+    logger.info("=" * 80)
+    logger.info("FastAPI Application Shutting Down")
+    logger.info("Cleaning up resources...")
+    logger.info("=" * 80)
+    
+    try:
+        # Close MCP client singleton
+        mcp_client = get_mcp_client()
+        if mcp_client.initialized:
+            logger.info("Closing MCP client connections...")
+            await mcp_client.close()
+            logger.info("MCP connections closed")
+        
+        # Cleanup Docker executor if it exists
+        if docker_executor is not None:
+            logger.info("Stopping Docker container...")
+            await docker_executor.cleanup()
+            logger.info("Docker container stopped")
+        
+        logger.info("Server shutdown complete")
+    except Exception as e:
+        logger.error(f"Error during shutdown cleanup: {str(e)}")
+
+# Create FastAPI application instance with metadata and lifecycle management
 app = FastAPI(
     title="MCP Benchmark Dashboard API",
     description="Compare Traditional MCP vs Code Execution MCP performance",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Add CORS middleware to allow cross-origin requests
@@ -140,8 +186,8 @@ async def run_traditional_mcp_benchmark(request: QueryRequest):
             result=result
         )
         
-        # Close MCP client connection
-        await benchmark.mcp_client.close()
+        # Don't close MCP client - it's a singleton shared across requests
+        # It will be closed during server shutdown
         
         # Format result to match response model
         formatted_result = storage.format_result(result)
@@ -191,6 +237,10 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
         benchmark = CodeExecutionBenchmark()
         await benchmark.initialize_async()
         
+        # Store Docker executor reference globally for shutdown cleanup
+        global _global_docker_executor
+        _global_docker_executor = benchmark.orchestrator.docker_executor
+        
         # Run the benchmark with user query
         result = await benchmark.run_benchmark_async(request.query)
         
@@ -201,7 +251,7 @@ async def run_code_execution_mcp_benchmark(request: QueryRequest):
             result=result
         )
         
-        # Cleanup resources and close connections
+        # Cleanup resources (doesn't close shared MCP/Docker - they stay alive)
         await benchmark.cleanup_async()
         
         # Format result to match response model

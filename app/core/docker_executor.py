@@ -6,6 +6,7 @@ import json
 from typing import Dict, Any, Optional
 import time
 from app.app_logging.logger import setup_logger
+from app.config import DOCKER_IMAGE_NAME, DOCKER_MCP_GATEWAY, CODE_EXECUTION_TIMEOUT
 
 logger = setup_logger(__name__)
 
@@ -14,15 +15,15 @@ class DockerCodeExecutor:
     
     def __init__(
         self,
-        image: str,
-        gateway_url: str,
-        timeout_s: int = 30,
-        max_idle_time: int = 300,  # Kill container after 5 min idle
+        image: str = DOCKER_IMAGE_NAME,
+        gateway_url: str = DOCKER_MCP_GATEWAY,
+        timeout_s: int = CODE_EXECUTION_TIMEOUT
+        # max_idle_time: int = 300,  # Kill container after 5 min idle
     ):
         self.image = image
         self.gateway_url = gateway_url
         self.timeout_s = timeout_s
-        self.max_idle_time = max_idle_time
+        # self.max_idle_time = max_idle_time
         
         # Container state
         self.process: Optional[asyncio.subprocess.Process] = None
@@ -66,11 +67,11 @@ class DockerCodeExecutor:
             
             logger.info(f"Received from stderr: {ready_line}")
             
-            if b"READY" not in ready_line:
+            if b"READY" not in ready_line: # in case of mounting error (b"READY" won't received)
                 # Read more stderr for debugging
                 stderr_data = ready_line.decode('utf-8', errors='replace')
                 try:
-                    more_stderr = await asyncio.wait_for(
+                    more_stderr = await asyncio.wait_for( 
                         self.process.stderr.read(1024),
                         timeout=2
                     )
@@ -145,7 +146,7 @@ class DockerCodeExecutor:
         try:
             # Send code with length prefix
             code_bytes = code.encode('utf-8')
-            length_bytes = len(code_bytes).to_bytes(4, 'big')
+            length_bytes = len(code_bytes).to_bytes(4, 'big') # int converted to exact 4 bytes
             
             logger.info(f"Sending {len(code_bytes)} bytes of code to container")
             self.process.stdin.write(length_bytes)
@@ -208,3 +209,11 @@ class DockerCodeExecutor:
                 self.process.kill()
             except:
                 pass
+
+docker_executor_instance = None
+
+def get_docker_executor(image: str = DOCKER_IMAGE_NAME, gateway_url: str = DOCKER_MCP_GATEWAY, timeout_s: int = 30):
+    global docker_executor_instance
+    if docker_executor_instance is None:
+        docker_executor_instance = DockerCodeExecutor(image = image, gateway_url=gateway_url, timeout_s=timeout_s)
+    return docker_executor_instance

@@ -19,7 +19,6 @@ from app.config import OPENAI_MODEL
 
 # Dynamic MCP tools
 from app.dynamic_langchain.langchain_mcp_call_tool import mcp_call
-from app.core.tools_generator import generate_mcp_tool_descriptions_and_catalog
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
@@ -67,7 +66,7 @@ class TraditionalMCPBenchmark:
         """
         # Initialize MCP client and connect to filesystem server
         await self.mcp_client.initialize()
-        self.mcp_tool_catalog = await generate_mcp_tool_descriptions_and_catalog()
+        self.mcp_tool_catalog = self.mcp_client.get_catalog()
         logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
 
         
@@ -239,7 +238,7 @@ class TraditionalMCPBenchmark:
             System prompt string with tool usage instructions
         """
         # Return comprehensive system prompt with tool usage guidelines
-        return """You are a data analysis assistant.
+        return f"""You are a data analysis assistant.
 
                 ## AVAILABLE TOOLS
 

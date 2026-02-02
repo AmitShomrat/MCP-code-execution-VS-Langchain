@@ -13,8 +13,8 @@ import os
 
 async def execute_code(code: str) -> dict:
     """Execute code and return results"""
-    stdout_capture = io.StringIO()
-    stderr_capture = io.StringIO()
+    stdout_capture = io.StringIO() # in-memory temporary buffer to capture stdout (acts like a file to write into)
+    stderr_capture = io.StringIO() 
     
     try:
         # Setup execution namespace with __name__ set to '__main__'
@@ -24,7 +24,7 @@ async def execute_code(code: str) -> dict:
             '__name__': '__main__',
             'asyncio': asyncio,
         }
-        
+        # redirect stdout and stderr to the in-memory temporary buffers. (print function is to buffer captured stdout and stderr)
         with contextlib.redirect_stdout(stdout_capture), \
              contextlib.redirect_stderr(stderr_capture):
             exec(code, exec_namespace, exec_namespace)
@@ -66,12 +66,12 @@ async def main_loop():
     while True:
         try:
             # Read length prefix (4 bytes)
-            length_bytes = sys.stdin.buffer.read(4)
-            if not length_bytes:
-                break
+            length_bytes = sys.stdin.buffer.read(4) # read exact 4 bytes
+            if not length_bytes: # there is nothing to execute keep trying.
+                break 
             
             # Read code payload
-            length = int.from_bytes(length_bytes, 'big')
+            length = int.from_bytes(length_bytes, 'big') # bytes converted to int
             code = sys.stdin.buffer.read(length).decode('utf-8')
             
             # Execute code

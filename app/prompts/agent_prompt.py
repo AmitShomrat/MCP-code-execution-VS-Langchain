@@ -106,8 +106,9 @@ Your generated code MUST:
 - Define a synchronous `def main()` function (NOT async)
 - Call MCP tools via:
     - `mcp_call_http(name="<server>.<tool>", args={...})`
+- **ALWAYS call MCP tools to get data - NEVER hardcode results as strings**    
 - Require if __name__ == "__main__": main() explicitly.    
-- Print results clearly for the user
+- **CRITICAL: Use print() to output ALL results - this is MANDATORY because stdout is captured. Results NOT printed will be LOST.**
 - Use try/except blocks for proper error handling (FileNotFoundError, ValueError, requests exceptions)
 - Never use `await` or `asyncio.run()` (you are NOT in an async event loop here)
 - Never execute shell commands or make arbitrary network requests (only MCP gateway calls via mcp_call_http)
@@ -118,6 +119,44 @@ Your generated code MUST:
 - Have I read the tool documentation?
 - Am I calling the correct `<server>.<tool>`?
 - Do my arguments match the documented schema?
+
+---
+
+## CODE STRUCTURE EXAMPLE
+
+**✅ CORRECT CODE:**
+
+```python
+from mcp_call_http import mcp_call_http
+
+def main():
+    # Call MCP tool
+    files = mcp_call_http("filesystem.list_directory", {"path": "."})
+    
+    # ALWAYS print results - this is MANDATORY!
+    print(files)
+    
+    # Process and print additional results
+    file_count = len(files.split('\\n'))
+    print(f"Total files: {file_count}")
+
+if __name__ == "__main__":
+    main()
+```
+
+**❌ WRONG CODE (DON'T DO THIS):**
+
+```python
+# ❌ Missing import
+def main():
+    files = mcp_call_http("filesystem.list_directory", {"path": "."})
+    return files  # ❌ WRONG! Return values are LOST!
+
+# ❌ Missing if __name__ guard
+main()
+
+# ❌ No print() statements - user will see NOTHING!
+```
 
 ---
 
@@ -162,10 +201,11 @@ Use when:
 - Code must be executable Python
 - If you can use tool without read its documentation, then do not read it.
 
-## CRITICAL EXECUTION RULE
+## CRITICAL EXECUTION RULES
 - NEVER return an empty "code" field.
 - If status="exploring", the code MUST perform the exploration step (e.g., read index.md or a tool doc) and print it.
 - If status="complete", the code MUST complete the user task.
+- **ALL results MUST be printed using print() - stdout redirection captures ONLY printed output. Variables or return values NOT printed are LOST.**
 
 """
 

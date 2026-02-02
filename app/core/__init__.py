@@ -3,8 +3,7 @@ Core MCP functionality - client, executor, and agent
 """
 from .mcp_client import MCPClient, get_mcp_client
 from .agent import OpenAICodeAgent
-from .docker_executor import DockerCodeExecutor
-from .tools_generator import generate_mcp_tool_descriptions_and_catalog
+from .docker_executor import get_docker_executor
 
 
 
@@ -12,7 +11,6 @@ __all__ = [
     'MCPClient',
     'get_mcp_client',
     'OpenAICodeAgent',
-    'DockerCodeExecutor',
-    'generate_mcp_tool_descriptions_and_catalog'
+    'get_docker_executor',
 ]
 

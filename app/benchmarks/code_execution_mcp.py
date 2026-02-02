@@ -96,14 +96,13 @@ class CodeExecutionBenchmark:
     
     async def cleanup_async(self):
         """
-        Cleanup MCP connections and resources.
+        Cleanup benchmark resources after task completion.
         
-        This method:
-        1. Closes MCP client connections
-        2. Releases any held resources
+        NOTE: MCP connections and Docker container remain active for reuse
+        across multiple benchmark runs for better performance.
         """
         # Log cleanup start
         logger.info("Cleaning up Code Execution MCP Benchmark")
         
-        # Cleanup orchestrator resources
+        # Signal orchestrator that task is complete (doesn't close shared resources)
         await self.orchestrator.cleanup_async()

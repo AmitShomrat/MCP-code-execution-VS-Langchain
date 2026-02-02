@@ -10,13 +10,15 @@ import time
 import json
 
 # Application imports
-from app.core import get_mcp_client, OpenAICodeAgent, DockerCodeExecutor, generate_mcp_tool_descriptions_and_catalog
+from app.core import get_mcp_client, OpenAICodeAgent, get_docker_executor
 from app.utils import ResultLogger
 from app.app_logging.logger import setup_logger
-from app.config import (CODE_EXECUTION_TIMEOUT,
-                        MCP_CONFIG_PATH,
-                        DOCKER_IMAGE_NAME,
-                        DOCKER_MCP_GATEWAY)
+from app.config import (
+    MCP_CONFIG_PATH,
+    DOCKER_IMAGE_NAME,
+    DOCKER_MCP_GATEWAY,
+    CODE_EXECUTION_TIMEOUT
+)
 
 
 # Initialize logger for tracking orchestration operations
@@ -47,7 +49,7 @@ class RealMCPOrchestrator:
         # Initialize code executor with timeout configuration
         # self.code_executor = CodeExecutor(timeout=CODE_EXECUTION_TIMEOUT)
 
-        self.docker_executor = DockerCodeExecutor(image=DOCKER_IMAGE_NAME,
+        self.docker_executor = get_docker_executor(image=DOCKER_IMAGE_NAME,
                                                   gateway_url=DOCKER_MCP_GATEWAY,
                                                   timeout_s=CODE_EXECUTION_TIMEOUT)
         
@@ -71,31 +73,10 @@ class RealMCPOrchestrator:
         # Initialize MCP client and connect to all configured servers
         await self.mcp_client.initialize()
 
-        # Get list of all connected servers
-        servers = self.mcp_client.get_available_servers()
-        logger.info(f"Available MCP servers: {servers}\n")
+        # Start container for code execution
+        await self.docker_executor.start_container()
 
-        # Log tool file description generation start banner
-        logger.info("\n\n" + "=" * 80)
-        logger.info("GENERATING TOOL DESCRIPTIONS FOR MCP CLIENT CONNECTIONS")
-        logger.info("=" * 80 + "\n")
-        await generate_mcp_tool_descriptions_and_catalog()
-
-
-        # # Iterate through each server to discover available tools
-        # for server_name in servers:
-        #     # Check if server is successfully connected
-        #     if self.mcp_client.is_server_connected(server_name):
-        #         # List all tools available from this server
-        #         tools = await self.mcp_client.list_tools(server_name)
-        #         logger.info(f"Server '{server_name}' tools:")
-                
-        #         # Log each tool's name and description
-        #         for tool in tools:
-        #             logger.info(f"  - {tool.name}: {tool.description}")
-                
-        #         # Add blank line after each server's tools
-        #         logger.info("")
+    
 
         # Log initialization completion banner
         logger.info("=" * 80)
@@ -340,11 +321,15 @@ class RealMCPOrchestrator:
 
     async def cleanup_async(self):
         """
-        Cleanup MCP connections and resources.
+        Cleanup orchestrator resources after task completion.
+        
+        NOTE: MCP client is a singleton shared across requests, so we don't close it here.
+        Docker container is kept alive for reuse across requests for better performance.
+        These resources will be cleaned up when the server shuts down.
         """
-        # Close all MCP client connections
-        await self.mcp_client.close()
-        await self.docker_executor.cleanup()
+        # Don't close MCP client - it's a singleton that should stay alive across requests
+        # Don't kill Docker container - reuse it for 10-15x faster subsequent requests
+        logger.debug("Orchestrator task completed (resources kept alive for reuse)")
 
 
    
