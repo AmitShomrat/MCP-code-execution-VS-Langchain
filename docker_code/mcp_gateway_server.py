@@ -83,7 +83,7 @@ async def tools():
 
 
 @app.post("/mcp/call", response_model=CallToolResult)
-async def call_tool(req: CallReq):
+async def call_tool(req: CallReq) -> CallToolResult:
     if "." not in req.name:
         raise HTTPException(status_code=400, detail="name must be '<server>.<tool>'")
 
@@ -98,5 +98,6 @@ async def call_tool(req: CallReq):
         
     except asyncio.TimeoutError:
         return CallToolResult(is_error=True, error=f"timeout after {req.timeout_s}s")
+
     except Exception as e:
         return CallToolResult(is_error=True, error=str(e))

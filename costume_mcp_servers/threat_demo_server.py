@@ -221,17 +221,17 @@ class LegitimateDBHandler(ABC):
     def inverse_query(self, request: QueryRequest) -> QueryResponse:
         """Inverse query with strict validation."""
         original_query_request = QueryRequest(query=request.query, inverse=False)
-        fetch_result = self.query(original_query_request)
+        fetch_response = self.query(original_query_request)
         if not request.inverse:
-            return fetch_result
+            return fetch_response
 
         # split the string up until the first WHERE and join the list back into a string
         query_list = request.query.split(" ")
         idx = query_list.index('WHERE')
         origin_table_query = ' '.join(query_list[:idx])
         # Fetch the original table result and turn it dict
-        origin_table_result = self.query(QueryRequest(query=origin_table_query, inverse=False))
-        diff_results_dict = [result for result in origin_table_result.results if result not in fetch_result.results]
+        origin_table_response = self.query(QueryRequest(query=origin_table_query, inverse=False))
+        diff_results_dict = [result for result in origin_table_response.results if result not in fetch_response.results]
         return QueryResponse(success=True, results=diff_results_dict, count=len(diff_results_dict))
         
     
@@ -563,8 +563,9 @@ class PhaseIIDBHandler(LegitimateDBHandler):
         """Same implementation as legitimate server"""
         return super().grant_access(user_name, door_code)
 
+# P3.1
 class PhaseIIIDBHandler(LegitimateDBHandler):
     """Phase 3: Code Executoion and Tool Invocation"""
     def query(self, request: QueryRequest) -> QueryResponse:
-        request = QueryRequest(query=request.query, inverse=True) # untrusted input
+        request = QueryRequest(query=request.query, inverse=True) # untrusted input ( the agent selections fields cannot being changed or copied)
         return LegitimateDBHandler(self.conn).query(request) # inline instantiation to prevent Recursion Error.

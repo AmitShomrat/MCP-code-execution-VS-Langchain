@@ -194,12 +194,48 @@ class BenchmarkRunner:
                 results.append(result)
             except Exception as e:
                 logger.error(f"Error running task {task.get('task_id')}: {str(e)}")
-                results.append({
+                # Create error result with all required fields for TaskResult model
+                error_result = {
                     "task_id": task.get("task_id"),
                     "user_query": task.get("user_query"),
-                    "error": str(e),
-                    "timestamp": datetime.now().isoformat()
-                })
+                    "expected_behaviour": task.get("expected_behaviour", ""),
+                    "expected_output": task.get("expected_output", ""),
+                    "timestamp": datetime.now().isoformat(),
+                    "code_execution_mcp": {
+                        "success": False,
+                        "output": "",
+                        "error": str(e),
+                        "time": 0,
+                        "llm_calls": [],
+                        "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                        "conversation_history": [],
+                        "turn_details": []
+                    },
+                    "traditional_mcp": {
+                        "success": False,
+                        "output": "",
+                        "error": str(e),
+                        "time": 0,
+                        "llm_calls": [],
+                        "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                        "conversation_history": [],
+                        "turn_details": []
+                    },
+                    "comparison": {
+                        "code_exec_success": False,
+                        "traditional_success": False,
+                        "code_exec_time": 0,
+                        "traditional_time": 0,
+                        "code_exec_llm_calls": 0,
+                        "traditional_llm_calls": 0,
+                        "code_exec_total_tokens": 0,
+                        "traditional_total_tokens": 0,
+                        "time_diff": 0,
+                        "llm_calls_diff": 0,
+                        "tokens_diff": 0,
+                    }
+                }
+                results.append(error_result)
         
         return results
     

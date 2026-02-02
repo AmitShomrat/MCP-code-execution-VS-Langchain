@@ -267,7 +267,7 @@ class RealMCPOrchestrator:
         # Log the execution output
         logger.info(f"\nExecution Result:\n{'-' * 80}\n{execution_result['output']}\n{'-' * 80}")
         
-        # Log any errors that occurred during execution
+        # Log any errors that occurred during execution ( Related to docker container execution and timouts)
         if execution_result['error']:
             logger.error(f"\nError: {execution_result['error']}")
 
