@@ -219,16 +219,14 @@ class OpenAIJudge(Agent):
         try:
             judge_result = self.llm_call(openai_judge_messages)
         except Exception as e:
-            logger.error(f"Error calling LLM: {e}")
             raise e
         
         # Validate required fields are present
         if "status" not in judge_result or "reasoning" not in judge_result:
             raise ValueError(f"Invalid LLM response format: {judge_result}")       
-        if judge_result["status"] not in ["true", "false"]:
+        if judge_result['status'] not in [True, False]:
             raise ValueError(f"Invalid status value: {judge_result['status']}")
         
         # Format real boolean value
-        judge_result["status"] = bool(judge_result["status"])
         return judge_result
 
