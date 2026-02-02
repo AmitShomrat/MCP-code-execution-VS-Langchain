@@ -306,6 +306,7 @@ async def get_benchmark_comparison():
 @app.post(
     "/api/benchmarks/run-multiple",
     response_model=MultiTaskResponse,
+    response_model_exclude_none=False,
     summary="Run Multiple Benchmark Tasks",
     description="Execute multiple benchmark tasks comparing both approaches"
 )
@@ -387,6 +388,16 @@ async def run_multiple_benchmarks(request: MultiTaskRequest):
         
         logger.info(f"Multi-task benchmark completed: {code_exec_successes}/{len(request.tasks)} code exec success, "
                    f"{traditional_successes}/{len(request.tasks)} traditional success")
+        
+        # Debug: Log if turn_details is present in results
+        for i, result in enumerate(results):
+            has_code_turn_details = "turn_details" in result.get("code_execution_mcp", {})
+            has_trad_turn_details = "turn_details" in result.get("traditional_mcp", {})
+            logger.info(f"Result {i}: code_exec turn_details={has_code_turn_details}, traditional turn_details={has_trad_turn_details}")
+            if has_code_turn_details:
+                logger.info(f"  Code exec turn_details count: {len(result['code_execution_mcp']['turn_details'])}")
+            if has_trad_turn_details:
+                logger.info(f"  Traditional turn_details count: {len(result['traditional_mcp']['turn_details'])}")
         
         return MultiTaskResponse(
             success=True,

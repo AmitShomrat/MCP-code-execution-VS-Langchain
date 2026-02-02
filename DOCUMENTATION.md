@@ -1,29 +1,543 @@
-# Complete Guide to STDIO, Pipes, and Inter-Process Communication
+# AI Code Execution with MCP - Complete Documentation
+
+> Comprehensive guide to the MCP Benchmark Dashboard, including architecture, technical concepts, and usage instructions.
+
+---
+
+## 📚 Table of Contents
+
+1. [Unified Dashboard](#unified-dashboard)
+   - [Overview](#overview)
+   - [Key Features](#key-features)
+   - [Architecture](#architecture)
+   - [Getting Started](#getting-started)
+   - [API Reference](#api-reference)
+
+2. [LLM Trace & Conversation History](#llm-trace--conversation-history)
+   - [Overview](#trace-overview)
+   - [Implementation Details](#implementation-details)
+   - [UI Structure](#ui-structure)
+   - [Usage Tips](#usage-tips)
+
+3. [Technical Deep Dive](#technical-deep-dive)
+   - [STDIO, Pipes, and IPC](#stdio-pipes-and-ipc)
+   - [Dynamic Code Execution](#dynamic-code-execution)
+   - [Output Capture & Redirection](#output-capture--redirection)
+   - [Docker Container Communication](#docker-container-communication)
+
+---
+
+# Unified Dashboard
+
+## Overview
+
+The system has been refactored into a **single unified FastAPI application** that replaces the previous dual-UI approach (Streamlit + FastAPI). This eliminates the multiprocessing complexity and MCP client singleton duplication issues.
+
+## Key Features
+
+### ✅ Single Application
+- One FastAPI app serving both dashboard and gateway
+- Shared MCP client singleton across all operations
+- No duplicate connections to MCP servers
+- Simplified deployment
+
+### ✅ Two Modes in One UI
+
+#### **Single Task Mode** 🎯
+- Run individual queries
+- Compare Traditional MCP vs Code Execution MCP in real-time
+- View detailed metrics and outputs
+- Export results
+
+#### **Multiple Tasks Mode** 📋
+- Add multiple benchmark tasks dynamically
+- Upload tasks from JSON files
+- Run batch comparisons
+- View aggregate statistics
+- Interactive charts for time and token comparisons
+- Detailed results with LLM trace history for each task
+- Download results as JSON
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│         MCP Benchmark Dashboard             │
+│         (FastAPI + JavaScript UI)           │
+├──────────────────┬──────────────────────────┤
+│  Single Task     │   Multiple Tasks         │
+│  - Run one query │   - Batch benchmarks     │
+│  - Quick compare │   - Analytics            │
+└──────────────────┴──────────────────────────┘
+                    │
+        ┌───────────┴───────────┐
+        │   Shared MCP Client   │
+        │     (Singleton)       │
+        └───────────┬───────────┘
+                    │
+    ┌───────────────┼───────────────┐
+    │               │               │
+┌───▼────┐    ┌────▼────┐    ┌────▼────┐
+│FS MCP  │    │Sequential│   │Code Exec│
+│Server  │    │Thinking  │   │  MCP    │
+└────────┘    └─────────┘    └─────────┘
+```
+
+## What Changed
+
+### 1. **Removed Streamlit**
+- No more separate Streamlit app
+- All functionality moved to FastAPI + JavaScript
+
+### 2. **New API Endpoints**
+Added to `/app/api/routes.py`:
+- `POST /api/benchmarks/run-multiple` - Run multiple benchmark tasks
+- Returns aggregate statistics and per-task results
+
+### 3. **New Models**
+Added to `/app/api/models.py`:
+- `TaskDefinition` - Define a benchmark task
+- `MultiTaskRequest` - Request for multiple tasks
+- `MultiTaskResponse` - Results with summary statistics
+- `TaskResult` - Individual task result with comparison
+
+### 4. **Enhanced UI**
+Updated `/static/index.html`:
+- Mode toggle buttons (Single/Multiple)
+- Multi-task section with dynamic task management
+- Summary cards showing aggregate metrics
+- Interactive charts for batch results
+- Detailed results view with collapsible LLM traces
+
+### 5. **New JavaScript Features**
+Added to `/static/js/app.js`:
+- `initializeMultiTaskMode()` - Set up multi-task functionality
+- `addTaskItem()` - Dynamically add tasks
+- `runAllTasks()` - Execute batch benchmarks
+- `displayMultiTaskResults()` - Show results with charts
+- `handleFileUpload()` - Upload tasks from JSON
+- `downloadResults()` - Export results as JSON
+- Chart.js integration for visual comparisons
+
+### 6. **Simplified Launcher**
+Updated `/launcher.py`:
+- Single menu option to start dashboard
+- Uses `main.py` which already shares MCP client correctly
+- No more multiprocessing/threading complexity
+
+## Getting Started
+
+### Starting the Dashboard
+
+```bash
+python launcher.py
+```
+
+Choose option 1 to start the dashboard.
+
+The dashboard will be available at:
+- **Main UI**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Gateway**: http://localhost:8080
+- **Gateway Docs**: http://localhost:8080/docs
+
+### Single Task Mode
+
+1. Enter your query in the text area
+2. Click "Traditional MCP" or "Code Execution MCP"
+3. View real-time results and comparisons
+4. Export results if needed
+
+### Multiple Tasks Mode
+
+1. Click the "Multiple Tasks" toggle button
+2. **Option A: Manual Entry**
+   - Click "+ Add Task" to add tasks
+   - Fill in:
+     - Task ID (e.g., task_1)
+     - Query (e.g., "Calculate total revenue in Sales_Records.csv")
+3. **Option B: Upload JSON**
+   - Click "Upload Tasks JSON"
+   - Select a JSON file with this format:
+     ```json
+     {
+       "tasks": [
+         {
+           "task_id": "task_1",
+           "user_query": "Your query here"
+         }
+       ]
+     }
+     ```
+4. Set max LLM turns (default: 3)
+5. Click "Run All Tasks"
+6. View:
+   - Summary statistics
+   - Time comparison chart
+   - Token usage chart
+   - Detailed results for each task
+   - LLM trace history (expand to see turn-by-turn details)
+7. Download results as JSON
+
+## Benefits
+
+### ✅ **No Singleton Issues**
+- Single process, single MCP client
+- No duplicate connections
+- Reduced resource usage
+
+### ✅ **Better Performance**
+- Less overhead from multiprocessing
+- Shared resources
+- Faster startup
+
+### ✅ **Simpler Deployment**
+- One application to deploy
+- Fewer moving parts
+- Easier to maintain
+
+### ✅ **Consistent UX**
+- Same look and feel across modes
+- Smooth transitions
+- Unified navigation
+
+### ✅ **Enhanced Features**
+- Batch benchmark execution
+- Aggregate analytics
+- Interactive visualizations
+- Export capabilities
+- Full LLM trace history
+
+## API Reference
+
+### Run Multiple Tasks
+
+```bash
+curl -X POST "http://localhost:8000/api/benchmarks/run-multiple" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tasks": [
+      {
+        "task_id": "task_1",
+        "user_query": "Calculate total revenue in Sales_Records.csv"
+      },
+      {
+        "task_id": "task_2",
+        "user_query": "Find the top 5 customers by total purchases"
+      }
+    ],
+    "max_turns": 3
+  }'
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "results": [
+    {
+      "task_id": "task_1",
+      "user_query": "Calculate total revenue...",
+      "timestamp": "2026-01-05T12:00:00",
+      "code_execution_mcp": {
+        "success": true,
+        "time": 5.2,
+        "output": "...",
+        "llm_calls": 3,
+        "total_tokens": 5590,
+        "turn_details": [...]
+      },
+      "traditional_mcp": {
+        "success": true,
+        "time": 8.1,
+        "output": "...",
+        "llm_calls": 3,
+        "total_tokens": 8234,
+        "turn_details": [...]
+      },
+      "comparison": {
+        "time_diff": -2.9,
+        "time_improvement_pct": 35.8,
+        "token_diff": -2644,
+        "token_reduction_pct": 32.1
+      }
+    }
+  ],
+  "summary": {
+    "total_tasks": 2,
+    "code_exec_successes": 2,
+    "traditional_successes": 2,
+    "avg_code_exec_time": 5.2,
+    "avg_traditional_time": 8.1,
+    "time_improvement": 35.8,
+    "token_reduction": 42.3
+  }
+}
+```
+
+### Technical Details
+
+#### Shared MCP Client
+
+The `main.py` implementation uses `asyncio.gather()` to run both servers:
+
+```python
+async def main():
+    global _mcp_client
+    _mcp_client = await get_mcp_client()  # Initialize once
+    await asyncio.gather(
+        serve("app.api.routes:app", "0.0.0.0", 8000),
+        serve("docker_code.mcp_gateway_server:app", "localhost", 8080)
+    )
+```
+
+Both servers share the same MCP client singleton, eliminating duplicate connections.
+
+#### Frontend Architecture
+
+- **Pure JavaScript** (no frameworks) for fast performance
+- **Chart.js** for interactive visualizations
+- **CSS Grid/Flexbox** for responsive layouts
+- **Fetch API** for async backend communication
+
+## Migration from Streamlit
+
+If you were using the Streamlit UI:
+
+**Before:**
+```bash
+python launcher.py  # Choose option 1 for Streamlit
+# Streamlit at :8501, Gateway at :8080
+```
+
+**Now:**
+```bash
+python launcher.py  # Choose option 1 for Dashboard
+# Everything at :8000, Gateway at :8080
+```
+
+All Streamlit functionality is now in the "Multiple Tasks" mode of the unified dashboard.
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Kill existing processes
+lsof -ti:8000 | xargs kill -9
+lsof -ti:8080 | xargs kill -9
+```
+
+### MCP Client Not Initializing
+
+Check that MCP servers are configured in `mcp_config.json`.
+
+### Charts Not Displaying
+
+Ensure Chart.js is loading correctly. Check browser console for errors.
+
+---
+
+# LLM Trace & Conversation History
+
+## Trace Overview
+
+The dashboard provides detailed trace messages and conversation history for each LLM call, showing the agent's thinking process and execution results with an intuitive collapsible UI.
+
+## Implementation Details
+
+### Backend Components
+
+#### 1. **Orchestrator (Code Execution MCP)**
+Located in `app/core/orchestrator.py`:
+- Returns `conversation_history` - Full message history
+- Returns `turn_details` - Formatted turn information
+- `_format_turn_details()` method extracts:
+  - Turn number
+  - LLM request (prompt)
+  - LLM response (generated code + reasoning)
+  - Execution result
+  - Latency and token usage
+
+#### 2. **Traditional MCP Benchmark**
+Located in `app/benchmarks/traditional_mcp.py`:
+- Returns `conversation_history` - Captured from agent
+- Returns `turn_details` - Formatted turn information
+- `_format_turn_details()` method extracts similar data
+
+### Frontend Components
+
+#### JavaScript Changes (`static/js/app.js`)
+
+**Updated `formatLLMCalls` Function:**
+```javascript
+const formatLLMCalls = (calls, turnDetails) => {
+    // Accepts turnDetails parameter
+    // Creates collapsible <details> elements for each call
+    // Shows request, response, and execution results
+}
+```
+
+**Features:**
+- ▶ Collapsible sections for each turn
+- 📤 Request to LLM (full prompt)
+- 🤖 LLM Response (code + reasoning)
+- ⚙️ Execution Result (what happened)
+- Token and latency info in summary
+- Proper JSON formatting with HTML escaping
+
+#### CSS Styles (`static/css/style.css`)
+
+**New Styles:**
+- `.llm-call-details` - Collapsible container
+- `.llm-call-summary` - Clickable header with arrow
+- `.summary-arrow` - Rotates on expand
+- `.llm-call-content` - Expanded content area
+- `.llm-message` - Individual message boxes
+- `.llm-request` - Orange accent for requests
+- `.llm-response` - Green accent for responses
+- `.llm-execution` - Cyan accent for execution results
+- `.message-content` - Styled code blocks with scrolling
+
+## UI Structure
+
+### Collapsed View:
+```
+▶ Turn 1    2.82s    1608 tokens (1469 prompt + 139 completion)
+▶ Turn 2    2.70s    1848 tokens (1714 prompt + 134 completion)
+▶ Turn 3    2.21s    2134 tokens (1995 prompt + 139 completion)
+```
+
+### Expanded View (Turn 1):
+```
+▼ Turn 1    2.82s    1608 tokens (1469 prompt + 139 completion)
+  
+  ┌─────────────────────────────────────────────┐
+  │ 📤 REQUEST TO LLM:                          │
+  │ {                                           │
+  │   "role": "user",                           │
+  │   "content": "List all files..."           │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+  
+  ┌─────────────────────────────────────────────┐
+  │ 🤖 LLM RESPONSE:                            │
+  │ {                                           │
+  │   "status": "exploring",                    │
+  │   "code": "import mcp_call...",            │
+  │   "reasoning": "I'll use filesystem..."    │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+  
+  ┌─────────────────────────────────────────────┐
+  │ ⚙️ EXECUTION RESULT:                        │
+  │ Execution result:                           │
+  │ [FILE] main.py                             │
+  │ [DIR] app                                  │
+  │ ...                                        │
+  └─────────────────────────────────────────────┘
+```
+
+### Information Hierarchy:
+```
+Task Result
+├─ Quick Metrics (always visible)
+│  ├─ Success badges
+│  ├─ Time comparison
+│  └─ Token comparison
+│
+└─ Full Results (collapsible)
+   ├─ Code Execution MCP
+   │  ├─ Final Output
+   │  └─ LLM Calls (collapsible)
+   │     ├─ Turn 1 (collapsible)
+   │     │  ├─ Request
+   │     │  ├─ Response
+   │     │  └─ Execution Result
+   │     ├─ Turn 2 (collapsible)
+   │     └─ Turn 3 (collapsible)
+   │
+   └─ Traditional MCP
+      ├─ Final Output
+      └─ LLM Calls (collapsible)
+         └─ Similar structure
+```
+
+## Visual Design
+
+### Color Coding:
+- **Orange/Yellow** (`--warning-color`) - Requests to LLM
+- **Green** (`--code-exec-color`) - LLM Responses
+- **Cyan** (`--success-color`) - Execution Results
+
+### Animations:
+- Arrow rotation on expand (0.3s ease)
+- Background transitions on hover (0.2s ease)
+- Smooth border color transitions
+
+### Accessibility:
+- Proper semantic HTML (`<details>`, `<summary>`)
+- Keyboard navigable (native details support)
+- Clear visual hierarchy
+- Scrollable content with custom scrollbars
+
+## Data Flow
+
+```
+Backend → Frontend → UI Display
+
+1. run_multi_turn_async() / run_benchmark_async()
+   └─> Captures conversation_history
+   └─> Calls _format_turn_details()
+   └─> Returns in API response
+
+2. displayDetailedResults(results)
+   └─> Calls formatLLMCalls(calls, turnDetails)
+   └─> Generates HTML with <details> elements
+   └─> Displays with proper formatting
+
+3. User Interaction
+   └─> Click to expand/collapse
+   └─> Smooth animations
+   └─> View complete trace
+```
+
+## Usage Tips
+
+### Navigation:
+1. Run multiple tasks
+2. View results summary
+3. Expand task details
+4. See "View Full Results & Outputs"
+5. Expand individual LLM calls (turns)
+6. See complete conversation flow
+
+### Best Practices:
+- **Start Collapsed** - Overview first, details on demand
+- **Expand Interesting Turns** - Focus on specific calls
+- **Compare Side-by-Side** - Code Exec vs Traditional
+- **Export Results** - Download JSON with full traces
+- **Study Patterns** - Learn from successful approaches
+
+## Benefits
+
+1. **Full Transparency** - See exactly what the LLM is thinking
+2. **Debugging** - Understand why certain decisions were made
+3. **Learning** - Study how agents solve problems
+4. **Comparison** - Compare approaches turn-by-turn
+5. **Troubleshooting** - Identify where things went wrong
+6. **Documentation** - Export complete traces for analysis
+
+---
+
+# Technical Deep Dive
+
+## STDIO, Pipes, and IPC
 
 A comprehensive guide to understanding streams, pipes, and binary communication protocols.
 
----
-
-## Table of Contents
-
-1. [What are Streams?](#what-are-streams)
-2. [The Three Standard Streams](#the-three-standard-streams)
-3. [Pipes: Connecting Processes](#pipes-connecting-processes)
-4. [Strings vs Bytes](#strings-vs-bytes)
-5. [Reading from Streams](#reading-from-streams)
-6. [EOF (End of File)](#eof-end-of-file)
-7. [Writing and Flushing](#writing-and-flushing)
-8. [The Length-Prefix Protocol](#the-length-prefix-protocol)
-9. [Persistent vs One-Shot Communication](#persistent-vs-one-shot-communication)
-10. [Real-World Example: Docker Container Communication](#real-world-example)
-11. [Dynamic Code Execution with exec()](#dynamic-code-execution-with-exec)
-12. [Namespaces and Variable Scope](#namespaces-and-variable-scope)
-13. [Output Redirection and Capture](#output-redirection-and-capture)
-14. [Extracting Results from Executed Code](#extracting-results-from-executed-code)
-
----
-
-## What are Streams?
+### What are Streams?
 
 **A stream is a sequence of data elements made available over time.**
 
@@ -38,20 +552,18 @@ Source → [Stream] → Destination
          Flows over time
 ```
 
-### Key Properties
+#### Key Properties
 
 - **Sequential**: Data arrives in order
 - **Unidirectional**: Data flows one way (unless you have two pipes)
 - **Buffered**: OS may hold data temporarily
 - **Blocking**: Operations wait if no data is available
 
----
-
-## The Three Standard Streams
+### The Three Standard Streams
 
 Every program has three default streams:
 
-### 1. **stdin** (Standard Input)
+#### 1. **stdin** (Standard Input)
 - **File Descriptor**: 0
 - **Direction**: INTO the program
 - **Purpose**: Receive input data
@@ -61,7 +573,7 @@ import sys
 data = sys.stdin.read()  # Read from stdin
 ```
 
-### 2. **stdout** (Standard Output)
+#### 2. **stdout** (Standard Output)
 - **File Descriptor**: 1
 - **Direction**: OUT of the program
 - **Purpose**: Send normal output
@@ -72,7 +584,7 @@ sys.stdout.write("Hello\n")  # Write to stdout
 print("Hello")                # Also writes to stdout
 ```
 
-### 3. **stderr** (Standard Error)
+#### 3. **stderr** (Standard Error)
 - **File Descriptor**: 2
 - **Direction**: OUT of the program
 - **Purpose**: Send error messages and diagnostics
@@ -83,7 +595,7 @@ sys.stderr.write("Error!\n")  # Write to stderr
 print("Error!", file=sys.stderr)  # Alternative
 ```
 
-### Why Three Streams?
+#### Why Three Streams?
 
 ```
 Program Flow:
@@ -103,13 +615,11 @@ stdin  →  0 ────────→│
 - Errors don't pollute normal output
 - Can pipe stdout to another program while still seeing errors
 
----
-
-## Pipes: Connecting Processes
+### Pipes: Connecting Processes
 
 **A pipe connects the output of one process to the input of another.**
 
-### Creating Pipes in Python
+#### Creating Pipes in Python
 
 ```python
 import asyncio
@@ -122,7 +632,7 @@ process = await asyncio.create_subprocess_exec(
 )
 ```
 
-### Visual Diagram
+#### Visual Diagram
 
 ```
 ┌─────────────────┐                    ┌─────────────────┐
@@ -138,18 +648,16 @@ process = await asyncio.create_subprocess_exec(
 └─────────────────┘                    └─────────────────┘
 ```
 
-### Pipe Properties
+#### Pipe Properties
 
 - **Bidirectional setup**: Can create pipes in both directions
 - **Buffered**: OS buffers data between processes
 - **Byte-oriented**: Pipes transfer binary data (bytes)
 - **No random access**: Can't seek backwards, only forward
 
----
+### Strings vs Bytes
 
-## Strings vs Bytes
-
-### The Fundamental Difference
+#### The Fundamental Difference
 
 **Strings (str)**: Abstract text representation
 ```python
@@ -166,7 +674,7 @@ len(data)   # 16 bytes (emoji and Chinese take multiple bytes)
 # b'Hello \xe4\xb8\x96\xe7\x95\x8c \xf0\x9f\x90\x8d'
 ```
 
-### Why the Distinction Matters
+#### Why the Distinction Matters
 
 **Pipes only understand BYTES!**
 
@@ -181,7 +689,7 @@ process.stdin.write("Hello".encode('utf-8'))
 process.stdin.write(b"Hello")
 ```
 
-### Encoding and Decoding
+#### Encoding and Decoding
 
 ```python
 # String → Bytes (Encoding)
@@ -193,7 +701,7 @@ data = b'Hello'
 text = data.decode('utf-8')  # 'Hello'
 ```
 
-### UTF-8: The Universal Standard
+#### UTF-8: The Universal Standard
 
 **Why UTF-8?**
 - ✅ Supports ALL Unicode characters (every language, emoji, symbols)
@@ -209,11 +717,9 @@ text = data.decode('utf-8')  # 'Hello'
 "🐍".encode('utf-8')     # b'\xf0\x9f\x90\x8d' (4 bytes)
 ```
 
----
+### Reading from Streams
 
-## Reading from Streams
-
-### `read()` - Read Until EOF
+#### `read()` - Read Until EOF
 
 ```python
 data = stream.read()  # Read ALL data until stream closes
@@ -229,7 +735,7 @@ data = stream.read()  # Read ALL data until stream closes
 - One-shot commands that exit
 - When you want everything
 
-### `read(size)` - Read Exact Amount
+#### `read(size)` - Read Exact Amount
 
 ```python
 data = stream.read(100)  # Read exactly 100 bytes
@@ -245,7 +751,7 @@ data = stream.read(100)  # Read exactly 100 bytes
 - Protocol with length prefix
 - Persistent connections
 
-### `readline()` - Read Until Newline
+#### `readline()` - Read Until Newline
 
 ```python
 line = stream.readline()  # Read until '\n'
@@ -261,7 +767,7 @@ line = stream.readline()  # Read until '\n'
 - Reading log files
 - Line-oriented data
 
-### Comparison Table
+#### Comparison Table
 
 | Method | Stops When | Best For |
 |--------|-----------|----------|
@@ -269,13 +775,11 @@ line = stream.readline()  # Read until '\n'
 | `read(size)` | Got `size` bytes | Binary protocols, known sizes |
 | `readline()` | Found `\n` | Text lines, logs |
 
----
-
-## EOF (End of File)
+### EOF (End of File)
 
 **EOF is a signal that means "no more data will ever come from this stream."**
 
-### What EOF Really Means
+#### What EOF Really Means
 
 EOF is **NOT a character** - it's a **state** of the stream:
 - The stream is closed
@@ -288,23 +792,23 @@ if len(data) == 0:  # This is EOF!
     print("Stream closed (EOF)")
 ```
 
-### When EOF Happens
+#### When EOF Happens
 
-#### 1. **File Reading**
+**1. File Reading**
 ```python
 with open('file.txt', 'rb') as f:
     data = f.read()  # Reads until end of file (EOF)
 # File has natural end → EOF exists
 ```
 
-#### 2. **Process Exits**
+**2. Process Exits**
 ```python
 process = subprocess.Popen(['ls', '-la'], stdout=PIPE)
 output = process.stdout.read()  # Waits for 'ls' to finish
 # When 'ls' exits → stdout closes → EOF → read() returns
 ```
 
-#### 3. **Explicit Close**
+**3. Explicit Close**
 ```python
 # Sender side:
 pipe.close()  # Explicitly close the pipe
@@ -313,9 +817,9 @@ pipe.close()  # Explicitly close the pipe
 data = pipe.read()  # Gets EOF (empty bytes)
 ```
 
-### When EOF Does NOT Happen
+#### When EOF Does NOT Happen
 
-#### Persistent Connections
+**Persistent Connections:**
 ```python
 # Server keeps running
 process = await create_subprocess_exec(
@@ -328,7 +832,7 @@ data = process.stdin.read()  # ⏳ HANGS FOREVER!
 # Process is alive, stdin is open → no EOF → waits forever
 ```
 
-### The EOF Problem in Persistent Connections
+#### The EOF Problem in Persistent Connections
 
 ```
 Timeline of read() with persistent connection:
@@ -350,11 +854,9 @@ Timeline of read() with persistent connection:
        Result: ⏳ HANGS FOREVER
 ```
 
----
+### Writing and Flushing
 
-## Writing and Flushing
-
-### The Buffer Problem
+#### The Buffer Problem
 
 When you write to a stream, data doesn't go immediately - it's **buffered**:
 
@@ -364,7 +866,7 @@ Your code → [Buffer in memory] → [Pipe/Network]
             Data sits here until flushed!
 ```
 
-### Why Buffering Exists
+#### Why Buffering Exists
 
 **Performance optimization:**
 - Writing to OS/network is expensive
@@ -376,7 +878,7 @@ Your code → [Buffer in memory] → [Pipe/Network]
 - Receiver waits for data that's stuck in buffer
 - Interactive protocols need immediate transmission
 
-### Flushing: Force Data to Send
+#### Flushing: Force Data to Send
 
 ```python
 # Write data
@@ -388,38 +890,22 @@ await stream.drain()  # Force send now!
 stream.flush()  # Synchronous version
 ```
 
-### When to Flush
+#### When to Flush
 
-#### ✅ **Always flush when:**
+**✅ Always flush when:**
 1. Interactive protocols (expecting immediate response)
 2. End of a message in a protocol
 3. Before waiting for a response
 4. Sending status/ready signals
 
-#### ❌ **Don't need to flush when:**
+**❌ Don't need to flush when:**
 1. Writing large amounts of data continuously
 2. About to close the stream anyway
 3. Performance is critical and you have many small writes
 
-### Reading vs Writing
+### The Length-Prefix Protocol
 
-**Important:** Flushing is ONLY for writing!
-
-```python
-# WRITING: Need to flush
-stream.write(data)     # Buffer the data
-await stream.drain()   # ✅ Flush (send it!)
-
-# READING: Auto-consumes, no flush
-data = stream.read()   # ✅ Automatically removes from pipe
-# No flush needed!
-```
-
----
-
-## The Length-Prefix Protocol
-
-### The Problem: Message Boundaries
+#### The Problem: Message Boundaries
 
 In a persistent connection, how do you know where one message ends and the next begins?
 
@@ -429,7 +915,7 @@ Pipe contains: [message1message2message3]
                Where do messages split?
 ```
 
-### Solution: Length Prefix
+#### Solution: Length Prefix
 
 **Send the length FIRST, then the data:**
 
@@ -442,9 +928,9 @@ Example:
      (420 in binary)
 ```
 
-### Implementation
+#### Implementation
 
-#### Sending Side
+**Sending Side:**
 ```python
 # 1. Prepare data
 message = "Hello, World!"
@@ -467,7 +953,7 @@ stream.write(message_bytes)
 await stream.drain()
 ```
 
-#### Receiving Side
+**Receiving Side:**
 ```python
 # 1. Read length (always 4 bytes)
 length_bytes = stream.read(4)
@@ -484,7 +970,7 @@ message = message_bytes.decode('utf-8')
 # Result: "Hello, World!"
 ```
 
-### Why 4 Bytes?
+#### Why 4 Bytes?
 
 ```
 1 byte  = 0 to 255              (256 bytes max)        ❌ Too small
@@ -495,7 +981,7 @@ message = message_bytes.decode('utf-8')
 
 4 bytes (32 bits) can represent up to 4GB - plenty for any message!
 
-### Big-Endian Byte Order
+#### Big-Endian Byte Order
 
 The number 420 (0x1A4) in different byte orders:
 
@@ -515,7 +1001,7 @@ The number 420 (0x1A4) in different byte orders:
 
 **Always use 'big' for network protocols** - it's the standard!
 
-### Advantages of Length-Prefix Protocol
+#### Advantages of Length-Prefix Protocol
 
 | Feature | Benefit |
 |---------|---------|
@@ -525,11 +1011,9 @@ The number 420 (0x1A4) in different byte orders:
 | **Simple** | Easy to implement correctly |
 | **Standard** | Used by many protocols |
 
----
+### Persistent vs One-Shot Communication
 
-## Persistent vs One-Shot Communication
-
-### One-Shot Communication
+#### One-Shot Communication
 
 **Pattern:** Connect → Send → Receive → Close
 
@@ -556,7 +1040,7 @@ process = subprocess.run(
 - ❌ Overhead: New process per request
 - ❌ Slow: Startup time every time
 
-### Persistent Communication
+#### Persistent Communication
 
 **Pattern:** Connect once → Send/Receive many times → Close when done
 
@@ -588,7 +1072,7 @@ await process.terminate()
 - ❌ Need protocol: Can't use EOF for message boundaries
 - ✅ Solution: Length-prefix or other protocol
 
-### Comparison
+#### Comparison
 
 | Aspect | One-Shot | Persistent |
 |--------|----------|-----------|
@@ -599,9 +1083,7 @@ await process.terminate()
 | **Complexity** | Simple | Need protocol |
 | **Best for** | Occasional tasks | High-frequency communication |
 
----
-
-## Real-World Example: Docker Container Communication
+## Docker Container Communication
 
 ### The Architecture
 
@@ -718,99 +1200,7 @@ Host                           Container
 5. **Flush after write** - Immediate delivery (interactive protocol)
 6. **EOF check** - Gracefully handle connection closure
 
----
-
-## Summary: Key Concepts
-
-### Streams
-- Sequential data flow
-- Three standard: stdin (0), stdout (1), stderr (2)
-- Unidirectional, buffered, can block
-
-### Pipes
-- Connect processes together
-- Transfer bytes (not strings!)
-- Bidirectional when you create pipes in both directions
-
-### Bytes vs Strings
-- Pipes only understand bytes
-- Must encode strings → bytes (UTF-8)
-- Must decode bytes → strings
-
-### Reading
-- `read()` - waits for EOF
-- `read(size)` - reads exact amount
-- `readline()` - reads until '\n'
-
-### EOF (End of File)
-- Signal that stream is closed
-- Happens when process exits, file ends, connection closes
-- Does NOT happen during normal operation of persistent connection
-
-### Writing & Flushing
-- Data is buffered before sending
-- `flush()` forces immediate transmission
-- Always flush in interactive protocols
-
-### Length-Prefix Protocol
-- Solves message boundary problem
-- Format: `[4-byte length][data]`
-- Works perfectly for persistent connections
-- No EOF needed!
-
-### Persistent Connections
-- Keep connection alive for multiple requests
-- Need protocol for message boundaries
-- Much faster than one-shot
-- Standard pattern in networking
-
----
-
-## Further Reading
-
-- **Python `asyncio` docs**: https://docs.python.org/3/library/asyncio-subprocess.html
-- **Binary protocols**: Look into Protocol Buffers, MessagePack
-- **Network programming**: Study TCP, HTTP, WebSocket protocols
-- **Unix pipes**: `man 2 pipe`, `man 7 pipe`
-
----
-
-## Quick Reference Card
-
-```python
-# ENCODING / DECODING
-text.encode('utf-8')              # str → bytes
-bytes_data.decode('utf-8')        # bytes → str
-
-# READING
-stream.read()                     # Read until EOF
-stream.read(n)                    # Read exactly n bytes
-stream.readline()                 # Read until \n
-
-# WRITING
-stream.write(data_bytes)          # Write bytes to buffer
-await stream.drain()              # Flush buffer (send now!)
-stream.flush()                    # Flush (sync version)
-
-# LENGTH PREFIX PROTOCOL
-# Send:
-length_bytes = len(data).to_bytes(4, 'big')
-stream.write(length_bytes + data)
-await stream.drain()
-
-# Receive:
-length = int.from_bytes(stream.read(4), 'big')
-data = stream.read(length)
-
-# EOF CHECK
-data = stream.read(n)
-if len(data) == 0:  # EOF!
-    break
-```
-
----
-
-## Dynamic Code Execution with exec()
+## Dynamic Code Execution
 
 **`exec()` is Python's way to execute code dynamically from a string.**
 
@@ -846,8 +1236,6 @@ print(return_value)  # None (always!)
 
 This is why we need alternative ways to get results (print, namespace inspection, etc.)
 
----
-
 ### How `exec()` Works
 
 **Signature:**
@@ -862,14 +1250,14 @@ exec(code, globals=None, locals=None)
 
 ### The Three Ways to Call `exec()`
 
-#### **1. No namespace (dangerous!)**
+#### 1. No namespace (dangerous!)
 ```python
 exec("x = 10")
 print(x)  # 10 - variable is in current scope!
 # ⚠️ Pollutes your namespace!
 ```
 
-#### **2. With globals only**
+#### 2. With globals only
 ```python
 namespace = {}
 exec("x = 10", namespace)
@@ -877,7 +1265,7 @@ print(namespace['x'])  # 10 ✅
 # x is NOT in your scope, only in namespace
 ```
 
-#### **3. With globals and locals (recommended)**
+#### 3. With globals and locals (recommended)
 ```python
 namespace = {}
 exec("x = 10", namespace, namespace)
@@ -888,11 +1276,9 @@ print(namespace['x'])  # 10 ✅
 
 **Best practice:** Use same dict for both globals and locals so imports work correctly.
 
----
-
 ### What Can You Execute?
 
-#### ✅ **Works: Statements**
+#### ✅ Works: Statements
 ```python
 exec("x = 10")              # Assignment
 exec("print('hello')")      # Function call
@@ -902,12 +1288,12 @@ exec("def f(): pass")       # Function definition
 exec("class C: pass")       # Class definition
 ```
 
-#### ❌ **Doesn't Work: Top-level return**
+#### ❌ Doesn't Work: Top-level return
 ```python
 exec("return 42")  # SyntaxError: 'return' outside function
 ```
 
-#### ⚠️ **Works but useless: Expressions**
+#### ⚠️ Works but useless: Expressions
 ```python
 exec("42")  # Valid, but result is lost!
 exec("10 + 32")  # Calculates but returns None
@@ -917,8 +1303,6 @@ exec("10 + 32")  # Calculates but returns None
 ```python
 result = eval("10 + 32")  # 42 ✅
 ```
-
----
 
 ### Security Warning ⚠️
 
@@ -936,13 +1320,9 @@ exec("open('/etc/passwd').read()")        # 💀 Data theft!
 - ✅ Sandboxed interpreter
 - ❌ NEVER directly on host with untrusted code
 
----
-
-## Namespaces and Variable Scope
+### Namespaces and Variable Scope
 
 **A namespace is a dictionary that holds variables and their values.**
-
-### What is a Namespace?
 
 Think of it as a **separate universe** where code runs:
 
@@ -960,7 +1340,7 @@ print(namespace['my_var']) # "exec" (Universe B)
 # They're separate! No collision!
 ```
 
-### Creating a Clean Namespace
+#### Creating a Clean Namespace
 
 ```python
 # Minimal namespace
@@ -972,7 +1352,7 @@ exec("x = 10", namespace)
 print(namespace['x'])  # 10
 ```
 
-### What's in `__builtins__`?
+#### What's in `__builtins__`?
 
 ```python
 # Without __builtins__:
@@ -991,7 +1371,7 @@ exec("print('hello')", namespace)
 - Basic exceptions: `ValueError`, `TypeError`, etc.
 - Type constructors: `list()`, `dict()`, `int()`, etc.
 
-### Setting `__name__` for Main Guard
+#### Setting `__name__` for Main Guard
 
 ```python
 code = """
@@ -1016,7 +1396,7 @@ exec(code, namespace)
 # "Hello from main!" ✅ main() is called!
 ```
 
-### Pre-loading Modules
+#### Pre-loading Modules
 
 ```python
 import asyncio
@@ -1036,7 +1416,7 @@ async def fetch():
 exec(code, namespace)
 ```
 
-### Namespace After Execution
+#### Namespace After Execution
 
 ```python
 namespace = {
@@ -1068,9 +1448,7 @@ print(namespace['answer'])   # 30
 print(namespace['calculate']) # <function calculate>
 ```
 
----
-
-## Output Redirection and Capture
+## Output Capture & Redirection
 
 **How to capture `print()` output from dynamically executed code.**
 
@@ -1091,7 +1469,7 @@ exec(code)
 
 ### The Solution: `io.StringIO()` + `contextlib.redirect_stdout()`
 
-#### **Step 1: Create In-Memory Buffer**
+#### Step 1: Create In-Memory Buffer
 
 ```python
 import io
@@ -1116,7 +1494,7 @@ buffer.write("World\n")
 content = buffer.getvalue()  # "Hello\nWorld\n"
 ```
 
-#### **Step 2: Redirect stdout**
+#### Step 2: Redirect stdout
 
 ```python
 import contextlib
@@ -1139,7 +1517,7 @@ With redirect_stdout(capture):
   print() → sys.stdout → capture (StringIO) → Memory buffer
 ```
 
-#### **Step 3: Execute Code with Redirection**
+#### Step 3: Execute Code with Redirection
 
 ```python
 import io
@@ -1167,8 +1545,6 @@ print(output)
 # Line 2
 # Result: 42
 ```
-
----
 
 ### Capturing Both stdout and stderr
 
@@ -1202,8 +1578,6 @@ print("STDERR:", stderr_output)
 # STDERR: Error message!
 ```
 
----
-
 ### How Redirection Works Internally
 
 ```python
@@ -1227,15 +1601,13 @@ class redirect_stdout:
 2. Execute: Code uses new stdout
 3. Exit: Restore old stdout
 
----
-
-## Extracting Results from Executed Code
+### Extracting Results from Executed Code
 
 **The Big Question: How do we get results from `exec()`?**
 
 Since `exec()` returns `None`, we have **four main strategies:**
 
-### **Strategy 1: Require `print()` (Simplest)**
+#### Strategy 1: Require `print()` (Simplest)
 
 ```python
 # Code MUST print results
@@ -1261,9 +1633,7 @@ output = capture.getvalue()  # "42\n"
 - ❌ User must remember to print
 - ❌ Not "natural" for functions that return
 
----
-
-### **Strategy 2: Inspect Namespace (Extract Variables)**
+#### Strategy 2: Inspect Namespace (Extract Variables)
 
 ```python
 # Code assigns to variables (no print needed)
@@ -1290,9 +1660,7 @@ output = namespace.get('result')  # 42
 - ❌ Not obvious which variable is "the result"
 - ❌ Need to serialize objects
 
----
-
-### **Strategy 3: Eval Last Expression (Jupyter-style)**
+#### Strategy 3: Eval Last Expression (Jupyter-style)
 
 ```python
 import ast
@@ -1332,9 +1700,7 @@ else:
 - ❌ Magic behavior
 - ❌ Only works for expressions
 
----
-
-### **Strategy 4: Hybrid (Auto-Print Result Variable)**
+#### Strategy 4: Hybrid (Auto-Print Result Variable)
 
 ```python
 code = """
@@ -1364,9 +1730,7 @@ output = capture.getvalue()  # "42\n"
 - ⚠️ Convention-based (must use 'result')
 - ⚠️ Slightly magical
 
----
-
-### **Strategy Comparison**
+#### Strategy Comparison
 
 | Strategy | User Code | Pros | Cons | Best For |
 |----------|-----------|------|------|----------|
@@ -1375,9 +1739,7 @@ output = capture.getvalue()  # "42\n"
 | **Eval last** | `x + y` | REPL-like | Complex | Interactive shells |
 | **Hybrid** | `result = 42` or `print(...)` | Flexible | Convention | LLM-generated code |
 
----
-
-## Complete Example: Execution with Capture and Namespace
+### Complete Example: Execution with Capture
 
 Here's how your `execution_server.py` works:
 
@@ -1452,176 +1814,9 @@ async def execute_code(code: str) -> dict:
         }
 ```
 
----
+### Key Insights
 
-## Accessing Variables from Namespace
-
-### **Getting All Variables**
-
-```python
-# After exec(code, namespace):
-all_vars = dict(namespace)
-```
-
-### **Filtering System Variables**
-
-```python
-# Method 1: Exclude dunder variables
-user_vars = {k: v for k, v in namespace.items() if not k.startswith('__')}
-
-# Method 2: Exclude all underscore
-user_vars = {k: v for k, v in namespace.items() if not k.startswith('_')}
-
-# Method 3: Track new variables (best!)
-initial_keys = set(namespace.keys())  # Before exec
-exec(code, namespace)
-new_vars = {k: namespace[k] for k in namespace.keys() if k not in initial_keys}
-```
-
-### **Getting Specific Variables**
-
-```python
-# Method 1: Direct access (raises KeyError if not found)
-result = namespace['result']
-
-# Method 2: Safe access (returns None if not found)
-result = namespace.get('result')
-
-# Method 3: Safe access with default
-result = namespace.get('result', 'Not found')
-
-# Method 4: Check first
-if 'result' in namespace:
-    result = namespace['result']
-else:
-    result = None
-```
-
-### **Serializing Variables**
-
-Not all Python objects can be serialized to JSON:
-
-```python
-import json
-import datetime
-
-namespace = {'__builtins__': __builtins__}
-
-code = """
-number = 42              # JSON-safe ✅
-text = "hello"           # JSON-safe ✅
-data = [1, 2, 3]        # JSON-safe ✅
-now = datetime.datetime.now()  # Not JSON-safe ❌
-func = lambda x: x + 1  # Not JSON-safe ❌
-"""
-
-exec(code, namespace)
-
-# Helper function to serialize
-def serialize_value(value):
-    """Convert variable to JSON-safe format"""
-    try:
-        json.dumps(value)  # Test if serializable
-        return value
-    except (TypeError, ValueError):
-        # Fall back to string representation
-        return str(value)
-
-# Apply to all user variables
-safe_vars = {
-    key: serialize_value(namespace[key])
-    for key in namespace.keys()
-    if not key.startswith('_')
-}
-
-print(safe_vars)
-# {
-#   'number': 42,
-#   'text': 'hello',
-#   'data': [1, 2, 3],
-#   'now': '2025-12-30 14:23:45.123456',  # ← Converted to string
-#   'func': '<function <lambda> at 0x...>'  # ← Converted to string
-# }
-```
-
----
-
-## Real-World Pattern: Your execution_server.py
-
-Let's trace through a complete execution:
-
-### **Input Code:**
-```python
-from mcp_call_http import mcp_call_http
-
-def main():
-    files = mcp_call_http("filesystem.list_directory", {"path": "."})
-    print(f"Files: {files}")
-    
-    count = len(files.split('\n'))
-    print(f"Count: {count}")
-    
-    return count  # ← This return is LOST!
-
-if __name__ == '__main__':
-    main()
-```
-
-### **Execution Flow:**
-
-```python
-# 1. Create buffers
-stdout_capture = io.StringIO()    # [ ]
-stderr_capture = io.StringIO()    # [ ]
-
-# 2. Setup namespace
-exec_namespace = {
-    '__builtins__': __builtins__,
-    '__name__': '__main__',  # ← Makes if __name__ == '__main__' work!
-    'asyncio': asyncio,
-}
-
-# 3. Execute with redirection
-with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-    exec(code, exec_namespace, exec_namespace)
-    # Code runs:
-    # - Imports mcp_call_http (from environment)
-    # - Defines main()
-    # - if __name__ == '__main__': evaluates to True
-    # - Calls main()
-    # - main() prints "Files: ..." and "Count: ..."
-    # - main() returns count (LOST! Not captured anywhere)
-
-# 4. Namespace after execution contains:
-exec_namespace = {
-    '__builtins__': <built-ins>,
-    '__name__': '__main__',
-    'asyncio': <module>,
-    'main': <function main>,  # ← Function is defined here
-    # Note: 'files' and 'count' are LOCAL to main(), not in namespace!
-}
-
-# 5. Buffers contain:
-stdout_capture = io.StringIO()  # "Files: ...\nCount: 15\n" ✅
-stderr_capture = io.StringIO()  # "" (empty)
-
-# 6. Extract
-stdout_output = stdout_capture.getvalue()
-# "Files: [FILE] main.py\n[DIR] app\n...\nCount: 15\n"
-
-# 7. Return
-return {
-    "success": True,
-    "output": stdout_output,  # ← This is what gets returned!
-    "error": None
-}
-```
-
----
-
-## Key Insights
-
-### **1. Return Values from Functions are LOST**
+#### 1. Return Values from Functions are LOST
 
 ```python
 code = """
@@ -1638,7 +1833,7 @@ exec(code, namespace)
 
 **Solution:** Use `print()` instead of `return` in the executed code.
 
-### **2. Top-Level Variables ARE Accessible**
+#### 2. Top-Level Variables ARE Accessible
 
 ```python
 code = """
@@ -1652,7 +1847,7 @@ exec(code, namespace)
 print(namespace['result'])  # 42 ✅
 ```
 
-### **3. Local Variables Inside Functions are NOT Accessible**
+#### 3. Local Variables Inside Functions are NOT Accessible
 
 ```python
 code = """
@@ -1672,11 +1867,9 @@ print(namespace.get('x'))   # None ❌ (local to function)
 print(namespace.get('y'))   # None ❌ (local to function)
 ```
 
----
+### Design Recommendations
 
-## Design Recommendations
-
-### **For Your LLM-Generated Code:**
+**For Your LLM-Generated Code:**
 
 **Option A: Enforce print() (Current)**
 ```python
@@ -1716,105 +1909,59 @@ if not stdout_output and 'result' in namespace:
 
 ---
 
-## Complete Mental Model
+## Quick Reference
 
-```
-┌─────────────────────────────────────────────────────┐
-│  exec(code, namespace)                              │
-│                                                     │
-│  ┌───────────────────────────────────────────┐    │
-│  │  Executed Code                            │    │
-│  │                                           │    │
-│  │  x = 10              → namespace['x']     │    │
-│  │  print("hi")         → stdout_capture     │    │
-│  │  print("err", file=stderr) → stderr_capture│    │
-│  │  def f(): return 42  → namespace['f']     │    │
-│  │  result = f()        → namespace['result']│    │
-│  │                                           │    │
-│  │  return 42           → ❌ LOST!           │    │
-│  │  42                  → ❌ LOST!           │    │
-│  └───────────────────────────────────────────┘    │
-│                                                     │
-│  Return value: None (always!)                      │
-└─────────────────────────────────────────────────────┘
-
-Capture mechanisms:
-├─ stdout_capture.getvalue() → Printed output
-├─ stderr_capture.getvalue() → Error output  
-└─ namespace['variable']     → Variable values
-```
-
----
-
-## Summary: Answering Your Questions
-
-### **Q1: Do we need to enforce print()?**
-
-**Current system: YES**
-- Only way to get output back to host
-- `StringIO` only captures `print()` statements
-- Variables in namespace aren't automatically returned
-
-**Alternative: NO (if you inspect namespace)**
-- Can extract variables from namespace
-- Auto-print 'result' variable if exists
-- More flexible but more complex
-
-### **Q2: Where do return values go?**
-
-**Answer: Nowhere! They're LOST!**
-
+### Encoding / Decoding
 ```python
-# Return from top-level: SyntaxError
-exec("return 42")  # ❌ SyntaxError
-
-# Return from function: Discarded
-exec("""
-def f():
-    return 42
-f()
-""")  # Return value thrown away ❌
-
-# Only captured if assigned:
-exec("""
-def f():
-    return 42
-result = f()  # ← Now in namespace['result'] ✅
-""")
+text.encode('utf-8')              # str → bytes
+bytes_data.decode('utf-8')        # bytes → str
 ```
 
----
-
-## Best Practice for Your System
-
-**Given that an LLM generates the code:**
-
-1. **Prompt the LLM to use `print()`** (simplest, most reliable)
-2. **OR: Add fallback to auto-print 'result' variable** (more flexible)
-3. **Always redirect stdout/stderr** (capture everything)
-4. **Track variables in namespace** (for debugging/advanced features)
-
-**Recommended implementation:**
+### Reading
 ```python
-# Execute with redirection
-with redirect_stdout(capture):
-    exec(code, namespace)
-
-# Get output
-output = capture.getvalue()
-
-# Fallback: if no output, check for 'result' variable
-if not output and 'result' in namespace:
-    output = str(namespace['result'])
+stream.read()                     # Read until EOF
+stream.read(n)                    # Read exactly n bytes
+stream.readline()                 # Read until \n
 ```
 
-This gives you the best of both worlds! 🎯
+### Writing
+```python
+stream.write(data_bytes)          # Write bytes to buffer
+await stream.drain()              # Flush buffer (send now!)
+stream.flush()                    # Flush (sync version)
+```
+
+### Length Prefix Protocol
+```python
+# Send:
+length_bytes = len(data).to_bytes(4, 'big')
+stream.write(length_bytes + data)
+await stream.drain()
+
+# Receive:
+length = int.from_bytes(stream.read(4), 'big')
+data = stream.read(length)
+```
+
+### EOF Check
+```python
+data = stream.read(n)
+if len(data) == 0:  # EOF!
+    break
+```
 
 ---
 
-**End of Guide** 🎯
+## Support
 
-This document now covers everything from low-level stdio/pipes to high-level code execution patterns!
+For issues or questions, check:
+1. Browser console for JavaScript errors
+2. Terminal output for backend errors
+3. API docs at http://localhost:8000/docs
 
+---
 
+**Last Updated:** January 5, 2026
+
+**Version:** 2.0
 

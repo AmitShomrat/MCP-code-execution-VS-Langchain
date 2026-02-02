@@ -146,6 +146,7 @@ class RealMCPOrchestrator:
                 break
             
             # Add results to conversation history for next turn (status="exploring")
+            # This function appends assistent response and execution result to the conversation history (as assistant message and user message)
             self._update_conversation_with_results(llm_call_number, response, execution_result, messages)
             
             # Log warning if execution failed but continue to next turn
@@ -170,7 +171,9 @@ class RealMCPOrchestrator:
             "error": final_result.get("error"),
             "time": total_time,
             "llm_calls": self._format_llm_calls(turn_times, token_usage_list),
-            "tokens": self._calculate_total_tokens(token_usage_list)
+            "tokens": self._calculate_total_tokens(token_usage_list),
+            "conversation_history":messages, 
+            "turn_details": self._format_turn_details(messages, turn_times, token_usage_list)
         }
     
     async def _get_llm_response(self, llm_call_number: int, messages: list) -> Dict[str, str]:
@@ -316,6 +319,29 @@ class RealMCPOrchestrator:
         # Return aggregated token usage
         return total_tokens
 
+    def _format_turn_details(self, messages: list, turn_times: list, token_usage_list: list) -> list:
+        """Format detailed turn information for UI display."""
+        turns = []
+        turn_number = 0
+        
+        for i in range(1, len(messages), 2):  # Skip first user message, then iterate by 2
+            if i < len(messages):
+                assistant_msg = messages[i]
+                user_feedback = messages[i + 1] if i + 1 < len(messages) else None
+                
+                turn_number += 1
+                turn = {
+                    "turn_number": turn_number,
+                    "llm_request": messages[i - 1] if i > 0 else messages[0],
+                    "llm_response": assistant_msg,
+                    "execution_result": user_feedback.get("content", "") if user_feedback else None,
+                    "latency": turn_times[turn_number - 1] if turn_number - 1 < len(turn_times) else 0,
+                    "tokens": token_usage_list[turn_number - 1] if turn_number - 1 < len(token_usage_list) else {}
+                }
+                turns.append(turn)
+        
+        return turns
+
     async def cleanup_async(self):
         """
         Cleanup orchestrator resources after task completion.
@@ -332,4 +358,3 @@ class RealMCPOrchestrator:
         # Log cleanup completion
         logger.info("Orchestrator cleanup complete")
 
-   

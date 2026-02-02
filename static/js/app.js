@@ -1250,19 +1250,69 @@ function displayDetailedResults(results) {
         const timeDiff = result.comparison?.time_diff || 0;
         const tokenDiff = result.comparison?.tokens_diff || 0;
         
-        // Format LLM calls
-        const formatLLMCalls = (calls) => {
+        // Format LLM calls with turn details
+        const formatLLMCalls = (calls, turnDetails) => {
             if (!calls || calls.length === 0) return '<p class="no-data">No LLM calls</p>';
-            return calls.map(call => `
-                <div class="llm-call-item">
-                    <span class="call-number">Call ${call.call_number}</span>
-                    <span class="call-latency">${call.latency?.toFixed(2) || 'N/A'}s</span>
-                    <span class="call-tokens">${call.tokens?.total_tokens || 0} tokens</span>
-                    <span class="call-breakdown">
-                        (${call.tokens?.prompt_tokens || 0} prompt + ${call.tokens?.completion_tokens || 0} completion)
-                    </span>
-                </div>
-            `).join('');
+            
+            // Debug logging
+            console.log('formatLLMCalls called with:');
+            console.log('calls:', calls);
+            console.log('turnDetails:', turnDetails);
+            
+            return calls.map((call, callIndex) => {
+                const turn = turnDetails && turnDetails[callIndex];
+                console.log(`Turn ${callIndex}:`, turn);
+                
+                // Check if we have any meaningful details
+                const hasRequest = turn && turn.llm_request && (
+                    typeof turn.llm_request === 'string' || 
+                    (turn.llm_request.content && turn.llm_request.content !== "No detailed trace available")
+                );
+                const hasResponse = turn && turn.llm_response && (
+                    typeof turn.llm_response === 'string' || 
+                    (turn.llm_response.content && turn.llm_response.content !== "No detailed trace available")
+                );
+                const hasExecution = turn && turn.execution_result;
+                const hasDetails = hasRequest || hasResponse || hasExecution;
+                
+                return `
+                    <details class="llm-call-details">
+                        <summary class="llm-call-summary">
+                            <span class="summary-arrow">▶</span>
+                            <span class="call-number">Turn ${call.call_number}</span>
+                            <span class="call-latency">${call.latency?.toFixed(2) || 'N/A'}s</span>
+                            <span class="call-tokens">${call.tokens?.total_tokens || 0} tokens</span>
+                            <span class="call-breakdown">
+                                (${call.tokens?.prompt_tokens || 0} prompt + ${call.tokens?.completion_tokens || 0} completion)
+                            </span>
+                        </summary>
+                        ${hasDetails ? `
+                        <div class="llm-call-content">
+                            ${hasRequest ? `
+                            <div class="llm-message llm-request">
+                                <h8>📤 Request to LLM:</h8>
+                                <pre class="message-content">${escapeHtml(typeof turn.llm_request === 'string' ? turn.llm_request : JSON.stringify(turn.llm_request, null, 2))}</pre>
+                            </div>
+                            ` : ''}
+                            
+                            ${hasResponse ? `
+                            <div class="llm-message llm-response">
+                                <h8>🤖 LLM Response:</h8>
+                                <pre class="message-content">${escapeHtml(typeof turn.llm_response === 'string' ? turn.llm_response : JSON.stringify(turn.llm_response, null, 2))}</pre>
+                            </div>
+                            ` : ''}
+                            
+                            ${hasExecution ? `
+                            <div class="llm-message llm-execution">
+                                <h8>⚙️ Execution Result:</h8>
+                                <pre class="message-content">${escapeHtml(turn.execution_result)}</pre>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : '<p class="no-details">No detailed trace available</p>'}
+                    </details>
+                `;
+            }).join('');
         };
         
         return `
@@ -1339,7 +1389,7 @@ function displayDetailedResults(results) {
                         <div class="llm-calls-section">
                             <h7>LLM Calls (${result.code_execution_mcp?.llm_calls?.length || 0}):</h7>
                             <div class="llm-calls-list">
-                                ${formatLLMCalls(result.code_execution_mcp?.llm_calls)}
+                                ${formatLLMCalls(result.code_execution_mcp?.llm_calls, result.code_execution_mcp?.turn_details)}
                             </div>
                             <div class="total-tokens">
                                 Total: ${result.code_execution_mcp?.tokens?.total_tokens || 0} tokens
@@ -1361,7 +1411,7 @@ function displayDetailedResults(results) {
                         <div class="llm-calls-section">
                             <h7>LLM Calls (${result.traditional_mcp?.llm_calls?.length || 0}):</h7>
                             <div class="llm-calls-list">
-                                ${formatLLMCalls(result.traditional_mcp?.llm_calls)}
+                                ${formatLLMCalls(result.traditional_mcp?.llm_calls, result.traditional_mcp?.turn_details)}
                             </div>
                             <div class="total-tokens">
                                 Total: ${result.traditional_mcp?.tokens?.total_tokens || 0} tokens

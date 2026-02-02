@@ -1557,15 +1557,50 @@ tbody tr:hover {
     margin-bottom: 10px;
 }
 
-.llm-call-item {
+/* Collapsible LLM Call Details */
+.llm-call-details {
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--secondary-bg);
+}
+
+.llm-call-summary {
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 12px 15px;
     background: var(--secondary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
     font-size: 0.85rem;
+    user-select: none;
+    transition: all 0.2s ease;
+    list-style: none;
+}
+
+.llm-call-summary::-webkit-details-marker {
+    display: none;
+}
+
+.llm-call-summary:hover {
+    background: var(--hover-bg);
+}
+
+.llm-call-details[open] .llm-call-summary {
+    background: var(--hover-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.summary-arrow {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.llm-call-details[open] .summary-arrow {
+    transform: rotate(90deg);
 }
 
 .call-number {
@@ -1588,6 +1623,104 @@ tbody tr:hover {
 .call-breakdown {
     color: var(--text-secondary);
     font-size: 0.8rem;
+}
+
+/* LLM Call Content (Expanded Section) */
+.llm-call-content {
+    padding: 20px;
+    background: var(--primary-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.llm-message {
+    border-left: 4px solid var(--border-color);
+    padding: 15px;
+    background: var(--secondary-bg);
+    border-radius: 6px;
+    transition: border-color 0.3s ease;
+}
+
+.llm-message.llm-request {
+    border-left-color: var(--warning-color);
+    background: linear-gradient(90deg, rgba(255, 166, 0, 0.05) 0%, var(--secondary-bg) 5%);
+}
+
+.llm-message.llm-response {
+    border-left-color: var(--code-exec-color);
+    background: linear-gradient(90deg, rgba(0, 255, 136, 0.05) 0%, var(--secondary-bg) 5%);
+}
+
+.llm-message.llm-execution {
+    border-left-color: var(--success-color);
+    background: linear-gradient(90deg, rgba(0, 217, 255, 0.05) 0%, var(--secondary-bg) 5%);
+}
+
+.llm-message h8 {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.llm-message.llm-request h8 {
+    color: var(--warning-color);
+}
+
+.llm-message.llm-response h8 {
+    color: var(--code-exec-color);
+}
+
+.llm-message.llm-execution h8 {
+    color: var(--success-color);
+}
+
+.llm-message .message-content {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 15px;
+    color: var(--text-primary);
+    font-family: 'Courier New', Consolas, Monaco, monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 500px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--primary-bg);
+}
+
+.llm-message .message-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.llm-message .message-content::-webkit-scrollbar-track {
+    background: var(--primary-bg);
+    border-radius: 4px;
+}
+
+.llm-message .message-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.llm-message .message-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+.no-details {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 0.9rem;
+    background: var(--primary-bg);
 }
 
 .total-tokens {

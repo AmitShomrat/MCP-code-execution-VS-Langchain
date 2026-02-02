@@ -181,6 +181,8 @@ class TaskResult(BaseModel):
         traditional_mcp: Traditional MCP result
         comparison: Comparison metrics
     """
+    model_config = {"extra": "allow"}
+    
     task_id: str = Field(..., description="Task identifier")
     user_query: str = Field(..., description="Executed query")
     timestamp: str = Field(..., description="Execution timestamp")
@@ -198,6 +200,8 @@ class MultiTaskResponse(BaseModel):
         results: List of task results
         summary: Aggregate metrics across all tasks
     """
+    model_config = {"extra": "allow"}
+    
     success: bool = Field(..., description="Overall success status")
     results: List[TaskResult] = Field(..., description="Results for each task")
     summary: Dict[str, Any] = Field(..., description="Aggregate statistics")

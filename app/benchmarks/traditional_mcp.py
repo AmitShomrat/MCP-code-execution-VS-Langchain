@@ -44,8 +44,7 @@ class TraditionalMCPBenchmark:
         - Token usage tracking
         - LLM call tracking
         """
-        # # Get singleton MCP client instance for filesystem operations
-        # self._mcp_client = get_mcp_client()
+        self.conversation_history = []
         
         # Initialize token usage tracking dictionary
         self.total_tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -114,6 +113,10 @@ class TraditionalMCPBenchmark:
             system_prompt=self._get_system_prompt()
         )
         
+
+        # Initialize conversation history
+        self.conversation_history = []
+
         try:
             # Invoke agent with user query
             result = await agent.ainvoke({
@@ -135,7 +138,10 @@ class TraditionalMCPBenchmark:
                         # Extract AI response content
                         output = msg.content
                         call_count += 1
-                        
+                    
+                        self.conversation_history.append({"role": "assistant" if msg.type == "ai" else "user",
+                                                          "content": output})
+
                         # Check if message has token usage metadata
                         if hasattr(msg, 'response_metadata'):
                             token_usage = msg.response_metadata.get('token_usage', {})
@@ -186,6 +192,9 @@ class TraditionalMCPBenchmark:
                 for call_detail in self.llm_calls_list:
                     call_detail["latency"] = round(avg_latency_per_call, 2)
             
+
+
+
             # Log final results banner
             logger.info(f"\n{'=' * 80}\nFINAL RESULTS\n{'=' * 80}")
             logger.info(f"\nStatus: SUCCESS")
@@ -211,7 +220,10 @@ class TraditionalMCPBenchmark:
                 "output": output,
                 "time": total_time,
                 "llm_calls": self.llm_calls_list,
-                "tokens": self.total_tokens
+                "tokens": self.total_tokens,
+                "conversation_history": self.conversation_history,
+                "turn_details": self._format_turn_details()
+                
             }
             
         except Exception as e:
@@ -228,7 +240,9 @@ class TraditionalMCPBenchmark:
                 "output": "",
                 "time": total_time,
                 "llm_calls": self.llm_calls_list,
-                "tokens": self.total_tokens
+                "tokens": self.total_tokens,
+                "conversation_history": self.conversation_history,
+                "turn_details": self._format_turn_details()
             }
 
     def _get_system_prompt(self) -> str:
@@ -253,6 +267,52 @@ class TraditionalMCPBenchmark:
                 - For filesystem operations, prefer tools under the `filesystem.*` server.
                 - If the user gives an exact path, use it directly.
             """
+
+    def _format_turn_details(self) -> list:
+        """Format turn details from conversation history.
+        
+        For Traditional MCP, the conversation includes AI messages, tool calls, and tool results.
+        We match these with LLM calls to create turn details.
+        """
+        turns = []
+        
+        if not self.conversation_history:
+            # No conversation history, return basic turn info
+            for i, call_info in enumerate(self.llm_calls_list):
+                turns.append({
+                    "turn_number": i + 1,
+                    "llm_request": {"role": "system", "content": "No detailed trace available"},
+                    "llm_response": {"role": "assistant", "content": "No detailed trace available"},
+                    "latency": call_info.get("latency", 0),
+                    "tokens": call_info.get("tokens", {})
+                })
+            return turns
+        
+        # Match conversation messages with LLM calls
+        # For simplicity, distribute messages across LLM calls
+        messages_per_call = max(1, len(self.conversation_history) // max(1, len(self.llm_calls_list)))
+        
+        for i, call_info in enumerate(self.llm_calls_list):
+            start_idx = i * messages_per_call
+            end_idx = min(start_idx + messages_per_call, len(self.conversation_history))
+            
+            # Get messages for this turn
+            turn_messages = self.conversation_history[start_idx:end_idx]
+            
+            # Separate into request and response
+            request_msgs = [msg for msg in turn_messages if msg.get("role") in ["user", "system"]]
+            response_msgs = [msg for msg in turn_messages if msg.get("role") == "assistant"]
+            
+            turn = {
+                "turn_number": i + 1,
+                "llm_request": request_msgs[0] if request_msgs else {"role": "user", "content": "Query processing..."},
+                "llm_response": response_msgs[0] if response_msgs else turn_messages[0] if turn_messages else {"role": "assistant", "content": "Processing..."},
+                "latency": call_info.get("latency", 0),
+                "tokens": call_info.get("tokens", {})
+            }
+            turns.append(turn)
+        
+        return turns
 
 
     async def cleanup_async(self):
