@@ -10,15 +10,13 @@ import time
 import json
 
 # Application imports
-from app.core import get_mcp_client, CodeExecutor, OpenAICodeAgent
+from app.core import get_mcp_client, CodeExecutor, OpenAICodeAgent, DockerCodeExecutor, generate_mcp_tool_descriptions
 from app.utils import ResultLogger
 from app.app_logging.logger import setup_logger
 from app.config import CODE_EXECUTION_TIMEOUT, MCP_CONFIG_PATH
 
 # Initialize logger for tracking orchestration operations
 logger = setup_logger(__name__)
-
-
 class RealMCPOrchestrator:
     """
     Orchestrates code execution with real MCP servers.
@@ -46,7 +44,11 @@ class RealMCPOrchestrator:
         self.mcp_client = get_mcp_client(mcp_config_path)
         
         # Initialize code executor with timeout configuration
-        self.code_executor = CodeExecutor(timeout=CODE_EXECUTION_TIMEOUT)
+        # self.code_executor = CodeExecutor(timeout=CODE_EXECUTION_TIMEOUT)
+
+        self.docker_executor = DockerCodeExecutor(image="code_execution_sandbox:v2",
+                                                  gateway_url="http://host.docker.internal:8080",
+                                                  timeout_s=CODE_EXECUTION_TIMEOUT)
         
         # Initialize OpenAI agent for code generation
         self.agent = OpenAICodeAgent()
@@ -72,20 +74,27 @@ class RealMCPOrchestrator:
         servers = self.mcp_client.get_available_servers()
         logger.info(f"Available MCP servers: {servers}\n")
 
-        # Iterate through each server to discover available tools
-        for server_name in servers:
-            # Check if server is successfully connected
-            if self.mcp_client.is_server_connected(server_name):
-                # List all tools available from this server
-                tools = await self.mcp_client.list_tools(server_name)
-                logger.info(f"Server '{server_name}' tools:")
+        # Log tool file description generation start banner
+        logger.info("\n\n" + "=" * 80)
+        logger.info("GENERATING TOOL DESCRIPTIONS FOR MCP CLIENT CONNECTIONS")
+        logger.info("=" * 80 + "\n")
+        await generate_mcp_tool_descriptions()
+
+
+        # # Iterate through each server to discover available tools
+        # for server_name in servers:
+        #     # Check if server is successfully connected
+        #     if self.mcp_client.is_server_connected(server_name):
+        #         # List all tools available from this server
+        #         tools = await self.mcp_client.list_tools(server_name)
+        #         logger.info(f"Server '{server_name}' tools:")
                 
-                # Log each tool's name and description
-                for tool in tools:
-                    logger.info(f"  - {tool.name}: {tool.description}")
+        #         # Log each tool's name and description
+        #         for tool in tools:
+        #             logger.info(f"  - {tool.name}: {tool.description}")
                 
-                # Add blank line after each server's tools
-                logger.info("")
+        #         # Add blank line after each server's tools
+        #         logger.info("")
 
         # Log initialization completion banner
         logger.info("=" * 80)
@@ -228,7 +237,8 @@ class RealMCPOrchestrator:
         logger.info(f"\n{'=' * 80}\nEXECUTING CODE (Call {llm_call_number})\n{'=' * 80}")
         
         # Execute the generated code in sandbox environment
-        execution_result = await self.code_executor.execute_async(response["code"])
+        # execution_result = await self.code_executor.execute_async(response["code"])
+        execution_result = await self.docker_executor.execute_async(response["code"])
         
         # Log the execution output
         logger.info(f"\nExecution Result:\n{'-' * 80}\n{execution_result['output']}\n{'-' * 80}")
@@ -238,6 +248,7 @@ class RealMCPOrchestrator:
             logger.error(f"\nError: {execution_result['error']}")
         
         # Return execution result dictionary
+        logger.info(f"Execution result: {execution_result}")
         return execution_result
     
     def _update_conversation_with_results(self, llm_call_number: int, response: Dict, 
@@ -335,3 +346,5 @@ class RealMCPOrchestrator:
         # Close all MCP client connections
         await self.mcp_client.close()
 
+
+   

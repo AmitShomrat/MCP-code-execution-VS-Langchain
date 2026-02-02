@@ -68,7 +68,7 @@ class TraditionalMCPBenchmark:
         # Initialize MCP client and connect to filesystem server
         await self.mcp_client.initialize()
         self.mcp_tool_catalog = await build_mcp_tool_catalog()
-        logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
+        # logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
 
         
     async def run_benchmark_async(self, query: str) -> Dict[str, Any]:

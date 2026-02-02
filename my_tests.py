@@ -43,3 +43,13 @@ asyncio.run(test_mcp_client())
 # - Make sure the tool_bridge is running: uv run tools_bridge.py
 # Start the conteiner: docker run -it python:3.8 "bash"
 # then hit the server using curl with the url 'http://host.docker.internal:8080/tools/list_directory'
+
+
+
+
+# To do:
+# - Have to unify the dynamic tools description for both traditional (up front) and the generated servers files description for code exec.
+# - remove old irrelevant files from the project, once everything is tied and work properly.
+# - make a single env's for docker image name and gateway route.
+# - make sure everything is documented.
+# - create the entire workflow scheme diagram.

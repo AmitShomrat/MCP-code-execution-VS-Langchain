@@ -54,6 +54,7 @@ class CodeExecutionBenchmark:
         
         # Initialize the orchestrator
         await self.orchestrator.initialize_async()
+
     
     async def run_benchmark_async(self, query: str, max_turns: int = 3) -> Dict[str, Any]:
         """
