@@ -8,11 +8,23 @@ from typing import Dict, Any
 
 from app.core.orchestrator import RealMCPOrchestrator
 from app.app_logging.logger import setup_logger
+from app.utils import BenchmarkStorage
 
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
 
+# Initialize benchmark storage handler
+storage = BenchmarkStorage()
+
+
+# Define directory paths for code execution results data storage
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = BASE_DIR / "data"
+CODE_EXEC_RESULTS_PATH = DATA_DIR / "code_execution_results.json"
+if not CODE_EXEC_RESULTS_PATH.exists():
+    CODE_EXEC_RESULTS_PATH.touch()
 
 class CodeExecutionBenchmark:
     """
@@ -92,6 +104,13 @@ class CodeExecutionBenchmark:
         
         # Log benchmark completion
         logger.info("Code Execution MCP benchmark completed")
+        
+        # Save benchmark results to JSON file
+        storage.save_result(
+            file_path=CODE_EXEC_RESULTS_PATH,
+            query=query,
+            result=result
+        )
         
         # Return results
         return result
