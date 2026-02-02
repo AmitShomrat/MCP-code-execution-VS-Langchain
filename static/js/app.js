@@ -929,6 +929,66 @@ function escapeHtml(text) {
 }
 
 /**
+ * Format message content in a human-readable way
+ */
+function formatMessageContent(message) {
+    // Handle string messages
+    if (typeof message === 'string') {
+        return `<pre>${escapeHtml(message)}</pre>`;
+    }
+    
+    // Handle object messages
+    if (typeof message === 'object' && message !== null) {
+        let html = '';
+        
+        // Show role if present
+        if (message.role) {
+            const roleLabel = message.role === 'user' ? '👤 User' : 
+                             message.role === 'assistant' ? '🤖 Assistant' : 
+                             message.role === 'system' ? '⚙️ System' : message.role;
+            html += `<div class="message-role"><strong>${roleLabel}</strong></div>`;
+        }
+        
+        // Handle content field
+        if (message.content) {
+            const content = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+            
+            // Try to parse if it's JSON string (for Code Execution MCP responses)
+            try {
+                const parsed = JSON.parse(content);
+                
+                // Format structured response (status, code, reasoning)
+                if (parsed.status || parsed.code || parsed.reasoning) {
+                    if (parsed.status) {
+                        const statusIcon = parsed.status === 'done' ? '✅' : 
+                                          parsed.status === 'exploring' ? '🔍' : '⏳';
+                        html += `<div class="message-field"><strong>${statusIcon} Status:</strong> ${escapeHtml(parsed.status)}</div>`;
+                    }
+                    
+                    if (parsed.reasoning) {
+                        html += `<div class="message-field"><strong>💭 Reasoning:</strong><br><pre class="reasoning-text">${escapeHtml(parsed.reasoning)}</pre></div>`;
+                    }
+                    
+                    if (parsed.code) {
+                        html += `<div class="message-field"><strong>📝 Generated Code:</strong><br><pre class="code-block">${escapeHtml(parsed.code)}</pre></div>`;
+                    }
+                } else {
+                    // Generic JSON formatting
+                    html += `<pre>${escapeHtml(content)}</pre>`;
+                }
+            } catch (e) {
+                // Not JSON, display as plain text
+                html += `<pre>${escapeHtml(content)}</pre>`;
+            }
+        }
+        
+        return html || `<pre>${escapeHtml(JSON.stringify(message, null, 2))}</pre>`;
+    }
+    
+    return '<p class="no-data">No content</p>';
+}
+
+/**
  * Collect all tasks from the UI
  */
 function collectTasks() {
@@ -1291,14 +1351,14 @@ function displayDetailedResults(results) {
                             ${hasRequest ? `
                             <div class="llm-message llm-request">
                                 <h8>📤 Request to LLM:</h8>
-                                <pre class="message-content">${escapeHtml(typeof turn.llm_request === 'string' ? turn.llm_request : JSON.stringify(turn.llm_request, null, 2))}</pre>
+                                <div class="message-content">${formatMessageContent(turn.llm_request)}</div>
                             </div>
                             ` : ''}
                             
                             ${hasResponse ? `
                             <div class="llm-message llm-response">
                                 <h8>🤖 LLM Response:</h8>
-                                <pre class="message-content">${escapeHtml(typeof turn.llm_response === 'string' ? turn.llm_response : JSON.stringify(turn.llm_response, null, 2))}</pre>
+                                <div class="message-content">${formatMessageContent(turn.llm_response)}</div>
                             </div>
                             ` : ''}
                             
@@ -1378,9 +1438,15 @@ function displayDetailedResults(results) {
                 </summary>
                 <div class="result-details-content">
                     <!-- Code Execution MCP Results -->
-                    <div class="approach-results code-exec-results">
-                        <h6 class="approach-title">⚡ Code Execution MCP</h6>
+                    <div class="approach-results code-exec-results" data-section="code-exec">
+                        <div class="approach-header">
+                            <h6 class="approach-title">⚡ Code Execution MCP</h6>
+                            <button class="collapse-btn" onclick="toggleApproachSection(event, 'code-exec')" title="Collapse this section">
+                                <span class="collapse-icon">◀</span>
+                            </button>
+                        </div>
                         
+                        <div class="approach-content">
                         <div class="output-section">
                             <h7>Output:</h7>
                             <pre class="output-box">${result.code_execution_mcp?.output || result.code_execution_mcp?.error || 'No output'}</pre>
@@ -1397,12 +1463,19 @@ function displayDetailedResults(results) {
                                 ${result.code_execution_mcp?.tokens?.completion_tokens || 0} completion)
                             </div>
                         </div>
+                        </div>
                     </div>
                     
                     <!-- Traditional MCP Results -->
-                    <div class="approach-results traditional-results">
-                        <h6 class="approach-title">🔧 Traditional MCP</h6>
+                    <div class="approach-results traditional-results" data-section="traditional">
+                        <div class="approach-header">
+                            <h6 class="approach-title">🔧 Traditional MCP</h6>
+                            <button class="collapse-btn" onclick="toggleApproachSection(event, 'traditional')" title="Collapse this section">
+                                <span class="collapse-icon">◀</span>
+                            </button>
+                        </div>
                         
+                        <div class="approach-content">
                         <div class="output-section">
                             <h7>Output:</h7>
                             <pre class="output-box">${result.traditional_mcp?.output || result.traditional_mcp?.error || 'No output'}</pre>
@@ -1419,12 +1492,57 @@ function displayDetailedResults(results) {
                                 ${result.traditional_mcp?.tokens?.completion_tokens || 0} completion)
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
             </details>
         </div>
         `;
     }).join('');
+}
+
+/**
+ * Toggle collapse/expand for approach sections
+ */
+function toggleApproachSection(event, sectionType) {
+    event.stopPropagation(); // Prevent details toggle
+    
+    // Find the parent result-details-content container
+    const button = event.target.closest('.collapse-btn');
+    const detailsContent = button.closest('.result-details-content');
+    
+    // Get both sections
+    const codeExecSection = detailsContent.querySelector('[data-section="code-exec"]');
+    const traditionalSection = detailsContent.querySelector('[data-section="traditional"]');
+    
+    // Determine which section to toggle
+    const targetSection = sectionType === 'code-exec' ? codeExecSection : traditionalSection;
+    const otherSection = sectionType === 'code-exec' ? traditionalSection : codeExecSection;
+    
+    // Check current state
+    const isCollapsed = targetSection.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+        // Expand this section, restore both to 50%
+        targetSection.classList.remove('collapsed');
+        otherSection.classList.remove('expanded');
+        
+        // Update both buttons
+        const targetBtn = targetSection.querySelector('.collapse-icon');
+        const otherBtn = otherSection.querySelector('.collapse-icon');
+        targetBtn.textContent = '◀';
+        otherBtn.textContent = '◀';
+    } else {
+        // Collapse this section, expand the other
+        targetSection.classList.add('collapsed');
+        otherSection.classList.add('expanded');
+        
+        // Update both buttons
+        const targetBtn = targetSection.querySelector('.collapse-icon');
+        const otherBtn = otherSection.querySelector('.collapse-icon');
+        targetBtn.textContent = '▶';
+        otherBtn.textContent = '◀';
+    }
 }
 
 // Initialize application when DOM is ready

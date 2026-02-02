@@ -139,15 +139,15 @@ class RealMCPOrchestrator:
             # Log turn completion
             logger.info(f"\n{'=' * 80}\nLLM CALL {llm_call_number} COMPLETED in {turn_time:.2f}s\n{'=' * 80}")
             
+            # Add results to conversation history (for both "exploring" and "complete" status)
+            # This function appends assistant response and execution result to the conversation history
+            self._update_conversation_with_results(llm_call_number, response, execution_result, messages)
+            
             # Check if task is complete (status="complete" means agent finished)
             if response["status"] == "complete":
                 logger.info("\nTask COMPLETE (status=complete)\n")
                 final_result = execution_result
                 break
-            
-            # Add results to conversation history for next turn (status="exploring")
-            # This function appends assistent response and execution result to the conversation history (as assistant message and user message)
-            self._update_conversation_with_results(llm_call_number, response, execution_result, messages)
             
             # Log warning if execution failed but continue to next turn
             if not execution_result['success']:
