@@ -1,6 +1,6 @@
 import os, requests
 
-MCP_GATEWAY = os.environ["MCP_GATEWAY"]  # e.g. http://host.docker.internal:8080
+MCP_GATEWAY = os.environ["MCP_GATEWAY"] if "MCP_GATEWAY" in os.environ else "http://host.docker.internal:8080" # e.g. http://host.docker.internal:8080
 
 def mcp_call_http(name: str, args: dict):
     r = requests.post(f"{MCP_GATEWAY}/mcp/call", json={"name": name, "args": args, "timeout_s": 30}, timeout=35)
