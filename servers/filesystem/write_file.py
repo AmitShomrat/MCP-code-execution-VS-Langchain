@@ -6,7 +6,8 @@ Enables agent-generated code to write content to files via MCP.
 """
 
 from app.core.mcp_client import get_mcp_client
-
+from langchain.tools import tool
+@tool
 
 async def write_file(path: str, content: str) -> str:
     """

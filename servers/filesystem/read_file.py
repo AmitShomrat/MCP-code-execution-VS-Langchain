@@ -6,7 +6,8 @@ Enables agent-generated code to read file contents via MCP.
 """
 
 from app.core.mcp_client import get_mcp_client
-
+from langchain.tools import tool
+@tool
 
 async def read_file(path: str) -> str:
     """

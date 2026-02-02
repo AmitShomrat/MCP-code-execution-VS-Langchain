@@ -7,6 +7,7 @@ Uses pandas to analyze CSV structure and return top 5 rows with column informati
 from app.core.mcp_client import get_mcp_client
 import pandas as pd
 from io import StringIO
+from langchain.tools import tool
 
 
 async def inspect_csv(path: str) -> str:

@@ -19,6 +19,7 @@ from langchain.tools import tool
 from app.app_logging.logger import setup_logger
 from app.core.mcp_client import get_mcp_client
 from app.config import OPENAI_MODEL
+from servers.filesystem import list_directory, inspect_csv, read_file, write_file
 
 # Initialize logger for tracking benchmark operations
 logger = setup_logger(__name__)
@@ -52,6 +53,9 @@ class TraditionalMCPBenchmark:
         # Initialize LLM call counters
         self.llm_calls = 0
         self.llm_calls_list = []
+
+        # mcp_tools
+        self.mcp_tools = [list_directory, inspect_csv, read_file, write_file]
         
     async def initialize_async(self):
         """
@@ -63,97 +67,6 @@ class TraditionalMCPBenchmark:
         # Initialize MCP client and connect to filesystem server
         await self.mcp_client.initialize()
         
-    def create_mcp_tools(self):
-        """
-        Create LangChain tools from MCP server using tool decorator.
-        
-        Creates three tools:
-        1. read_file - Read any file content
-        2. list_directory - List directory contents  
-        3. inspect_csv - Read and format CSV files
-        
-        Returns:
-            List of LangChain tool objects
-        """
-        
-        # Define read_file tool using LangChain @tool decorator
-        @tool
-        async def read_file(path: str) -> str:
-            """
-            Read text files (.txt, .md, .json, .py, etc.).
-                        
-            Args:
-                path: Path to the text file to read (NOT for CSV files)
-                
-            Returns:
-                Text file content as string
-            """
-            logger.info(f"\n\n**create_agent called LangChain tool: read_file with path: {path}**\n")
-
-            # Call MCP filesystem server's read_file tool
-            result = await self.mcp_client.call_tool(
-                "filesystem", "read_file", {"path": path}
-            )
-            
-            # Extract and return text content from MCP response
-            return result.content[0].text
-        
-        # Define list_directory tool using LangChain @tool decorator
-        @tool
-        async def list_directory(path: str) -> str:
-            """
-            List all files and directories in a given path.
-            
-            Args:
-                path: Directory path to list
-                
-            Returns:
-                Directory listing as string
-            """
-            logger.info(f"\n\n**create_agent called LangChain tool: list_directory with path: {path}**\n")
-
-            # Call MCP filesystem server's list_directory tool
-            result = await self.mcp_client.call_tool(
-                "filesystem", "list_directory", {"path": path}
-            )
-            
-            # Extract and return directory listing from MCP response
-            return result.content[0].text
-        
-        # Define inspect_csv tool using LangChain @tool decorator
-        @tool
-        async def inspect_csv(path: str) -> str:
-            """
-            Analyze CSV files - **ALWAYS use this for .csv files**.
-            
-            Returns complete CSV data as a formatted table with ALL rows.
-            Perfect for calculations, filtering, aggregations, and data analysis.
-            
-            Args:
-                path: Path to the CSV file
-                
-            Returns:
-                Complete formatted CSV data with all rows as a table
-            """
-            logger.info(f"\n\n**create_agent called LangChain tool: inspect_csv with path: {path}**\n")
-
-            # Call MCP filesystem server to read CSV file
-            result = await self.mcp_client.call_tool(
-                "filesystem", "read_file", {"path": path}
-            )
-            
-            # Extract file content from MCP response
-            content = result.content[0].text
-            
-            # Parse CSV content using pandas
-            df = pd.read_csv(StringIO(content))
-            
-            # Return formatted table string
-            return df.to_string()
-        
-        # Return list of all created tools
-        return [read_file, list_directory, inspect_csv]
-    
     async def run_benchmark_async(self, query: str) -> Dict[str, Any]:
         """
         Run traditional MCP benchmark with timing and token tracking.
@@ -190,13 +103,10 @@ class TraditionalMCPBenchmark:
         logger.info(f"\n{'=' * 80}\nTRADITIONAL MCP BENCHMARK (LangChain v1)\n{'=' * 80}\n")
         logger.info(f"Query: {query}\n")
         
-        # Create LangChain tools from MCP server
-        tools = self.create_mcp_tools()
-        
         # Initialize LangChain agent with model, tools, and system prompt
         agent = create_agent(
             model=OPENAI_MODEL,
-            tools=tools,
+            tools=self.mcp_tools,
             system_prompt=self._get_system_prompt()
         )
         

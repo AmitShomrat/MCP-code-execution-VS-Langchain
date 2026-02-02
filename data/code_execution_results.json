@@ -714,5 +714,31 @@
         "total_tokens": 3638
       }
     }
+  },
+  {
+    "timestamp": "2025-12-22T12:17:20.216656",
+    "query": "Return the current directory contents using list_directory with '.' as a path",
+    "result": {
+      "success": true,
+      "output": "Current directory contents:\n[FILE] .dockerignore\n[FILE] .env\n[DIR] .git\n[FILE] .gitignore\n[FILE] .python-version\n[DIR] .venv\n[FILE] README.md\n[FILE] Sales_Records.csv\n[DIR] app\n[DIR] data\n[DIR] docker\n[DIR] logs\n[FILE] main.py\n[FILE] mcp_config.json\n[FILE] my_tests.py\n[FILE] pyproject.toml\n[DIR] servers\n[DIR] static\n[FILE] uv.lock\n",
+      "error": null,
+      "time": 3.2889957427978516,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 3.29,
+          "tokens": {
+            "prompt_tokens": 1157,
+            "completion_tokens": 115,
+            "total_tokens": 1272
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 1157,
+        "completion_tokens": 115,
+        "total_tokens": 1272
+      }
+    }
   }
 ]

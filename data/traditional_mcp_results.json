@@ -924,5 +924,39 @@
         "total": 9757
       }
     }
+  },
+  {
+    "timestamp": "2025-12-22T12:16:33.120754",
+    "query": "Return the current directory contents using list_directory with '.' as a path",
+    "result": {
+      "success": true,
+      "output": "The current directory contents are as follows:\n\n- **Files:**\n  - `.dockerignore`\n  - `.env`\n  - `.gitignore`\n  - `.python-version`\n  - `README.md`\n  - `Sales_Records.csv`\n  - `main.py`\n  - `mcp_config.json`\n  - `my_tests.py`\n  - `pyproject.toml`\n  - `uv.lock`\n\n- **Directories:**\n  - `.git`\n  - `.venv`\n  - `app`\n  - `data`\n  - `docker`\n  - `logs`\n  - `servers`\n  - `static`",
+      "time": 5.222883701324463,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 2.61,
+          "tokens": {
+            "prompt_tokens": 817,
+            "completion_tokens": 14,
+            "total_tokens": 831
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 2.61,
+          "tokens": {
+            "prompt_tokens": 959,
+            "completion_tokens": 132,
+            "total_tokens": 1091
+          }
+        }
+      ],
+      "tokens": {
+        "input": 1776,
+        "output": 146,
+        "total": 1922
+      }
+    }
   }
 ]
