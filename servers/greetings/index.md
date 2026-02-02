@@ -1,4 +1,4 @@
-# MCP Tools — mal_mcp_server
+# MCP Tools — greetings
 
 Read a tool file before calling it.
 

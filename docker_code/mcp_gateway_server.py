@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI):
     global _mcp_client
     print("Starting MCP gateway server")
     _mcp_client = await get_mcp_client()
+    print(f"MCP gateway server using mcp_client: {_mcp_client} \n")
     yield
 
 app = FastAPI(title="MCP Gateway", version="1.0.0", lifespan=lifespan)

@@ -1,0 +1,86 @@
+[
+  {
+    "timestamp": "2026-01-04T17:08:10.337865",
+    "query": "make an evening greeting for Amit using the tool",
+    "result": {
+      "success": true,
+      "output": "The evening greeting for Amit is: \"Hello, Amit good evening!\"",
+      "time": 1.610503911972046,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 0.81,
+          "tokens": {
+            "prompt_tokens": 2194,
+            "completion_tokens": 28,
+            "total_tokens": 2222
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 0.81,
+          "tokens": {
+            "prompt_tokens": 2259,
+            "completion_tokens": 15,
+            "total_tokens": 2274
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4453,
+        "completion_tokens": 43,
+        "total_tokens": 4496
+      }
+    }
+  },
+  {
+    "timestamp": "2026-01-04T17:08:29.003701",
+    "query": "make an evening greeting for Amit using the tool",
+    "result": {
+      "success": true,
+      "output": "Good evening, Amit! Hope you're having a wonderful day!",
+      "time": 2.0193850994110107,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 1.01,
+          "tokens": {
+            "prompt_tokens": 2194,
+            "completion_tokens": 28,
+            "total_tokens": 2222
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 1.01,
+          "tokens": {
+            "prompt_tokens": 2259,
+            "completion_tokens": 13,
+            "total_tokens": 2272
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 4453,
+        "completion_tokens": 41,
+        "total_tokens": 4494
+      }
+    }
+  },
+  {
+    "timestamp": "2026-01-04T17:11:37.136544",
+    "query": "list current directory",
+    "result": {
+      "success": false,
+      "error": "",
+      "output": "",
+      "time": 1.344783067703247,
+      "llm_calls": [],
+      "tokens": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  }
+]

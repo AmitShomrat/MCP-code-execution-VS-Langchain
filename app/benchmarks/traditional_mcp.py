@@ -66,6 +66,7 @@ class TraditionalMCPBenchmark:
         """
         # Initialize MCP client and connect to filesystem server
         self._mcp_client = await get_mcp_client()
+        print(f"Traditional MCP Benchmark using mcp_client: {self._mcp_client} \n")
         self.mcp_tool_catalog = self._mcp_client.get_catalog()
         # logger.info(f"mcp_tool_catalog: \n {self.mcp_tool_catalog}")
 

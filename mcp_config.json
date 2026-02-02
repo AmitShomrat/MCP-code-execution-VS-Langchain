@@ -16,7 +16,7 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
-   "mal_mcp_server": {
+   "greetings": {
       "command": "uv",
       "args": [
         "run",

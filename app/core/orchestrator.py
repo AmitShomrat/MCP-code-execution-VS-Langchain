@@ -71,7 +71,7 @@ class RealMCPOrchestrator:
 
         # Initialize MCP client and connect to all configured servers
         self._mcp_client = await get_mcp_client()
-
+        print(f"Orchestrator using mcp_client: {self._mcp_client} \n")
         # Start container for code execution
         await self._docker_executor.start_container()
 

@@ -57,7 +57,7 @@ class CodeExecutionBenchmark:
         await self._orchestrator.initialize_async()
 
     
-    async def run_benchmark_async(self, query: str, max_turns: int = 3) -> Dict[str, Any]:
+    async def run_benchmark_async(self, query: str, max_turns: int = 5) -> Dict[str, Any]:
         """
         Run code execution MCP benchmark for the given query.
         
