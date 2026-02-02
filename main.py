@@ -50,52 +50,74 @@ def start_gateway_server():
     )
 
 
-def main():
-    """
-    Start both FastAPI servers concurrently using multiprocessing.
+# # def main():
+# #     """
+# #     Start both FastAPI servers concurrently using multiprocessing.
     
-    Servers:
-    - Main Dashboard: http://localhost:8000
-    - MCP Gateway: http://localhost:8085
-    """
-    # Log server startup information
-    logger.info("=" * 80)
-    logger.info("STARTING MCP BENCHMARK DASHBOARD & GATEWAY")
-    logger.info("\nMain server starting at: http://localhost:8000")
-    logger.info("API documentation at: http://localhost:8000/docs")
-    logger.info("\nGateway server starting at: http://localhost:8085")
-    logger.info("Gateway documentation at: http://localhost:8085/docs")
-    logger.info("=" * 80)
+# #     Servers:
+# #     - Main Dashboard: http://localhost:8000
+# #     - MCP Gateway: http://localhost:8085
+# #     """
+# #     # Log server startup information
+# #     logger.info("=" * 80)
+# #     logger.info("STARTING MCP BENCHMARK DASHBOARD & GATEWAY")
+# #     logger.info("\nMain server starting at: http://localhost:8000")
+# #     logger.info("API documentation at: http://localhost:8000/docs")
+# #     logger.info("\nGateway server starting at: http://localhost:8085")
+# #     logger.info("Gateway documentation at: http://localhost:8085/docs")
+# #     logger.info("=" * 80)
     
-    # Create processes for both servers
-    main_process = Process(target=start_main_server, name="MainServer")
-    gateway_process = Process(target=start_gateway_server, name="GatewayServer")
+# #     # Create processes for both servers
+# #     main_process = Process(target=start_main_server, name="MainServer")
+# #     gateway_process = Process(target=start_gateway_server, name="GatewayServer")
     
-    try:
-        # Start both servers
-        main_process.start()
-        gateway_process.start()
+# #     try:
+# #         # Start both servers
+# #         main_process.start()
+# #         gateway_process.start()
         
-        # Wait for both processes to complete
-        main_process.join()
-        gateway_process.join()
+# #         # Wait for both processes to complete
+# #         main_process.join()
+# #         gateway_process.join()
         
-    except KeyboardInterrupt:
-        logger.info("\nShutting down servers...")
-        # Terminate both processes on keyboard interrupt
-        main_process.terminate()
-        gateway_process.terminate()
+# #     except KeyboardInterrupt:
+# #         logger.info("\nShutting down servers...")
+# #         # Terminate both processes on keyboard interrupt
+# #         main_process.terminate()
+# #         gateway_process.terminate()
         
-        # Wait for processes to terminate
-        main_process.join()
-        gateway_process.join()
+# #         # Wait for processes to terminate
+# #         main_process.join()
+# #         gateway_process.join()
         
-        logger.info("Servers shut down successfully")
+# #         logger.info("Servers shut down successfully")
 
+
+# if __name__ == "__main__":
+#     # Required for multiprocessing on Windows and macOS
+#     multiprocessing.set_start_method('spawn', force=True)
+    
+#     # Run the main function when script is executed
+#     main()
+
+
+import asyncio
+from app.core import get_mcp_client
+async def serve(app, host, port):
+    config = uvicorn.Config(app, host=host, port=port, loop = "asyncio", lifespan="on", log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+async def main(routes_port=8000, gateway_port=8080):
+    global _mcp_client
+    _mcp_client = await get_mcp_client()
+    try:
+        await asyncio.gather(
+            serve("app.api.routes:app", "0.0.0.0", routes_port),
+            serve("docker_code.mcp_gateway_server:app", "localhost", gateway_port)
+        )
+    finally:
+        await _mcp_client.close()
 
 if __name__ == "__main__":
-    # Required for multiprocessing on Windows and macOS
-    multiprocessing.set_start_method('spawn', force=True)
-    
-    # Run the main function when script is executed
-    main()
+    asyncio.run(main())

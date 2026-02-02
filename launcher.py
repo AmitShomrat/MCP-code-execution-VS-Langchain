@@ -9,6 +9,8 @@ import sys
 import subprocess
 import multiprocessing
 import uvicorn
+import asyncio
+
 
 
 def print_banner():
@@ -39,7 +41,7 @@ def print_menu():
     print()
 
 
-def start_gateway_server():
+async def start_gateway_server(host='localhost', port=8080):
     """
     Start the MCP Gateway server.
     
@@ -49,17 +51,30 @@ def start_gateway_server():
     - Reload: False (disabled for multiprocessing)
     - Log level: info
     """
-    uvicorn.run(
+    config = uvicorn.Config(
         "docker_code.mcp_gateway_server:app",
-        host="localhost",
-        port=8080,
+        host=host,
+        port=port,
         reload=False,
         log_level="info"
     )
+    server = uvicorn.Server(config)
+    await server.serve()
 
+def run_streamlit():
+    """Run Streamlit benchmark UI."""
+    subprocess.run([
+        sys.executable, "-m", "streamlit", "run",
+        "app/streamlit_benchmark/ui.py",
+        "--server.port=8501",
+        "--server.address=0.0.0.0",
+        "--server.headless=true",
+        "--browser.gatherUsageStats=false"
+    ])
 
-def start_streamlit_ui():
+async def start_streamlit_with_gateway():
     """Start Streamlit benchmark UI with MCP Gateway."""
+    from app.core import get_mcp_client
     print("\n" + "=" * 80)
     print("Starting Streamlit Benchmark UI with MCP Gateway...")
     print("MCP Gateway: http://localhost:8080")
@@ -67,30 +82,35 @@ def start_streamlit_ui():
     print("Press Ctrl+C to stop")
     print("=" * 80 + "\n")
     
+    print("Initializing MCP client...")
+    _mcp_client = await get_mcp_client()
+    
+    # Start gateway in async task
+    gateway_task = asyncio.create_task(start_gateway_server(host='localhost', port=8080))
+
+    await asyncio.sleep(2)
+
+
     # Start gateway server in background process
     from multiprocessing import Process
     
-    gateway_process = Process(target=start_gateway_server, name="GatewayServer")
-    gateway_process.start()
-    
-    try:
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run",
-            "app/streamlit_benchmark/ui.py",
-            "--server.port=8501",
-            "--server.address=0.0.0.0",
-            "--server.headless=true",
-            "--browser.gatherUsageStats=false"
-        ])
+    streamlit_process = Process(target=run_streamlit, name="StreamlitUI")
+    streamlit_process.start()
 
-        # sys.executable is the absolute path of python interpreter
+    try:
+        await gateway_task
     except KeyboardInterrupt:
         print("\n\nStopping servers...")
     finally:
-        gateway_process.terminate()
-        gateway_process.join()
+        gateway_task.cancel()
+        streamlit_process.terminate()
+        streamlit_process.join()
+        await _mcp_client.close()
         print("Streamlit UI and Gateway stopped")
 
+def start_streamlit_ui():
+    """Start the Streamlit benchmark UI."""
+    asyncio.run(start_streamlit_with_gateway())
 
 def start_api_ui():
     """Start the FastAPI servers (Main + Gateway)."""
@@ -98,15 +118,16 @@ def start_api_ui():
     print("Starting FastAPI Servers...")
     print("Main API: http://localhost:8000")
     print("API Docs: http://localhost:8000/docs")
-    print("MCP Gateway: http://localhost:8080")
-    print("Gateway Docs: http://localhost:8080/docs")
+    print("MCP Gateway: http://localhost:8085")
+    print("Gateway Docs: http://localhost:8085/docs")
     print("Press Ctrl+C to stop")
     print("=" * 80 + "\n")
     
     # Import and run the existing main.py logic
     try:
         import main
-        main.main()
+        import asyncio
+        asyncio.run(main.main())
     except KeyboardInterrupt:
         print("\n\nAPI servers stopped")
 
