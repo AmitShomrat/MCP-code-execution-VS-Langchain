@@ -6,8 +6,6 @@ Run with: python main.py
 """
 import os
 import uvicorn
-import multiprocessing
-from multiprocessing import Process
 from app.app_logging.logger import setup_logger 
 # Initialize logger for application startup
 logger = setup_logger(__name__)

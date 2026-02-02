@@ -4,7 +4,7 @@ import asyncio
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from mcp.types import CallToolResult
+from mcp.types import CallToolResult, TextContent
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
@@ -97,7 +97,11 @@ async def call_tool(req: CallReq) -> CallToolResult:
         return result
         
     except asyncio.TimeoutError:
-        return CallToolResult(is_error=True, error=f"timeout after {req.timeout_s}s")
+        return CallToolResult(isError=True, 
+                              content=[TextContent(type="text", text=f"timeout after {req.timeout_s}s")],
+                              structuredContent={'error': f"timeout after {req.timeout_s}s"})
 
     except Exception as e:
-        return CallToolResult(is_error=True, error=str(e))
+        return CallToolResult(isError=True, 
+                              content=[TextContent(type="text", text=str(e))],
+                              structuredContent={'error': str(e)})

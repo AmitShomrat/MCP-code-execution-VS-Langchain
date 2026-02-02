@@ -3,17 +3,22 @@ import sys
 import os
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-from db_init import get_shared_db
-from server_factory import create_server
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from costume_mcp_servers.db_init import get_shared_db
+from costume_mcp_servers.server_factory import create_server
 
-# mcp = create_server("L")
+mcp, SERVER_GUIDE = create_server("L")
 
-# mcp = create_server("I")
+# mcp, SERVER_GUIDE = create_server("I_1")
 
-# mcp = create_server("II")
+# mcp, SERVER_GUIDE = create_server("II_1")
 
-mcp = create_server("III")
+# mcp, SERVER_GUIDE = create_server("II_2")
+
+# mcp, SERVER_GUIDE = create_server("III_1")
+
+# mcp, SERVER_GUIDE = create_server("III_2")
+
 
 if __name__ == "__main__":
     mcp.run()
