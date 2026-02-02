@@ -6,18 +6,24 @@ import json
 import os
 from typing import Any, Dict, List
 from contextlib import AsyncExitStack
+import threading
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from app.app_logging.logger import setup_logger
+from app.config import MCP_CONFIG_PATH
 
 # Setup logger
 logger = setup_logger(__name__)
 
 
 class MCPClient:
-    """Client for interacting with real MCP servers using official protocol"""
+    _mcp_client_instance = None
+    _lock = None
+    _thread_lock = threading.Lock()
+    _init_done = False
 
+    """Client for interacting with real MCP servers using official protocol"""
     def __init__(self, config_path: str = "mcp_config.json"):
         # Load MCP server configurations from file
         self.config_path = config_path
@@ -33,6 +39,23 @@ class MCPClient:
         
         # Store generated tool catalog
         self._catalog = ""
+    
+    @classmethod
+    async def get_mcp_client(cls, config_path: str = MCP_CONFIG_PATH):
+        """Get or create the global MCP client instance"""
+        
+        if cls._mcp_client_instance is None:
+            with cls._thread_lock:
+                if cls._mcp_client_instance is None:
+                    cls._mcp_client_instance = cls(config_path)
+
+        if not cls._init_done:
+            with cls._thread_lock:
+                if not cls._init_done:
+                    await cls._mcp_client_instance.initialize()
+                    cls._init_done = True
+
+        return cls._mcp_client_instance
 
     def _load_config(self) -> Dict[str, Any]:
         """Load MCP server configurations from JSON file"""
@@ -85,10 +108,10 @@ class MCPClient:
 
     async def initialize(self):
         """Initialize connections to all configured MCP servers and generate tool documentation"""
+        
         if self.initialized:
             logger.debug("MCP Client already initialized, skipping")
             return
-        
         logger.info("Initializing MCP Client connections...")
         # Connect to each configured server and creates communication channels
         for server_name, config in self.server_configs.items():
@@ -317,14 +340,19 @@ class MCPClient:
         logger.info("All MCP connections closed")
 
 
-# Global MCP client instance
-_mcp_client_instance = None
+# # Global MCP client instance
+# _mcp_client_instance = None
 
-def get_mcp_client(config_path: str = "mcp_config.json") -> MCPClient:
+# def get_mcp_client(config_path: str = "mcp_config.json") -> MCPClient:
+#     """Get or create the global MCP client instance"""
+#     global _mcp_client_instance
+    
+#     if _mcp_client_instance is None:
+#         _mcp_client_instance = MCPClient(config_path)
+    
+#     return _mcp_client_instance
+
+async def get_mcp_client(config_path: str = MCP_CONFIG_PATH) -> MCPClient:
     """Get or create the global MCP client instance"""
-    global _mcp_client_instance
+    return await MCPClient.get_mcp_client(config_path)
     
-    if _mcp_client_instance is None:
-        _mcp_client_instance = MCPClient(config_path)
-    
-    return _mcp_client_instance
