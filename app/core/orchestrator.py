@@ -85,74 +85,84 @@ class RealMCPOrchestrator:
 
 
 
-    async def run_multi_turn_judge_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
+    async def run_multi_turn_judge_async(self, user_message: Dict[str, Any], response: Dict[str, Any], llm_call_number: int, max_turns: int = 3) -> Dict[str, Any]:
+        f"""
+            run multi turn judge async used LLM as a judge to verify code generation safty and execution results compatibilty.
+            Args:
+                response: The code agent response in the context of user conversation history. Dict[str,str]
+                user_message: original user query object. (List[Dict[str,str]])
+                max_turns: max inner turn iterations for judgements. ( int )
+            Returns:
+                    'success': bool,
+                    'code': str,
+                    'execution_result': str,
+                    'final_reasoning': str  
+        """
+        logger.info(f"Running multi turn judge asyn for turn {llm_call_number}, with response: {response} and user message: {user_message}")
+
+        # PRE_EXECUTION Variables initialization:
+        # Initial code that generated with outer loop history.
+        pre_execution_judge_messages = [{'role': 'assistant', 'content': response["code"]}]
+        pre_execution_code_messages = []
         
-        for llm_call_number in range(1, max_turns + 1):
-            # Start timer for this turn
-            turn_start = time.time()
+        # POST_EXECUTION Variables initialization:
+        post_execution_judge_messages = [user_message]
+        
+        for judge_iteration in range(1, max_turns + 1):
+            try:
+                # LLM as a judge to make a PRE_EXECUTION code analysis. pass code & reasoning.
+                pre_execution_judge_response = await self.judge.judge_code_and_execution_results(pre_execution_judge_messages)
+            except Exception as e:
+                logger.error(f"Error in multi turn judge: in pre execution judge result: {e}")
+                return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
             
-            # Get LLM response with generated code
-            response = await self._get_llm_response(llm_call_number, messages)
+            if not pre_execution_judge_response['status']:
+                pre_execution_code_messages.extend([{'role': 'assistant', 'content': pre_execution_judge_response["reasoning"]}])
+                try:
+                    code_generation_response = await self.agent.generate_code_with_history(pre_execution_code_messages)
+                except Exception as e:
+                    logger.error(f"Error in multi turn judge: code generation response: {e}")
+                    return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
+                pre_execution_judge_messages.extend([{'role': 'assistant', 'content': code_generation_response["code"]}])
+                continue
             
-            # Handle case where code generation fails
-            if response is None:
-                return {"success": False, "output": "", "error": "Code generation failed"}
+            passed_code = pre_execution_judge_messages[-1].get("content", '')
 
-            # Final turn check:
-            # Check if code is empty (status="complete" with empty code means final answer in reasoning)
-            code = response.get("code", "").strip()
-            is_complete_with_empty_code = response["status"] == "complete" and (not code or code == "")
-            
-            # Execute the generated code only if it's not empty.
-            if is_complete_with_empty_code:
-                # No code to execute, use empty execution result
-                execution_result = {
-                    "success": True,
-                    "output": "",
-                    "error": None
-                }
-                logger.info(f"\n{'=' * 80}\nSKIPPING CODE EXECUTION (status=complete, empty code)\n{'=' * 80}")
-                logger.info("Final answer will be taken from reasoning field")
-            else:
-                # TODO 1: We have to add [HERE] LLM as a judge to make a PRE_EXECUTION code analysis. pass code & reasoning.
+            # TODO: Stoped here, tommorrow we need to complete the execution part. ( user_query with execution_result to the judge)
+            # We need to decide what happans if the execution result wasn't passed.
 
-                # Execute the generated code and log results
-                execution_result = await self._run_generated_code_and_log(llm_call_number, response)
-            
-                # TODO 2: We have to add [HERE] LLM as a judge to make a POST_EXECUTION code analysis. Execution Results.
-            
+            execution_result = await self._docker_executor.execute_async(passed_code)
+            # Execution result among with user message.
+            post_execution_judge_messages.extend([{'role': 'system', 'content': execution_result.get('output', '')}])
+            post_execution_judge_result = await self.judge.judge_code_and_execution_results(post_execution_judge_messages)
 
-            # Track execution output for final summarization
-            if execution_result.get("output"):
-                execution_results.append(execution_result["output"])
-            elif execution_result.get("error"):
-                logger.warning(f"Execution failed in LLM call {llm_call_number}, but continuing...\n")
-                execution_results.append(execution_result["error"])
+            # If the execution result wasn't passed, we need to generate a new code.
+            if not post_execution_judge_result["status"]:
+                if judge_iteration == max_turns:
+                    return {"success": False,
+                            "code": pre_execution_judge_messages[-1].get("content", ""),
+                            "execution_result": execution_result,
+                            "final_reasoning": post_execution_judge_result["reasoning"]} # Provide why the judge failed.
+                else:
+                    pre_execution_code_messages.extend([{'role': 'assistant', 'content': post_execution_judge_result["reasoning"]}])
+                    try:
+                        code_generation_response = await self.agent.generate_code_with_history(pre_execution_code_messages)
+                    except Exception as e:
+                        logger.error(f"Error in multi turn judge: code generation response: {e}")
+                        return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
+                    pre_execution_judge_messages.extend([{'role': 'assistant', 'content': code_generation_response["code"]}])
+                    continue
             
-            # Calculate turn execution time
-            turn_time = time.time() - turn_start
-            turn_times.append(turn_time)
-            
-            # Store token usage for this turn
-            token_usage_list.append(response.get("token_usage", {}))
-            
-            # Log turn completion
-            logger.info(f"\n{'=' * 80}\nLLM CALL {llm_call_number} COMPLETED in {turn_time:.2f}s\n{'=' * 80}")
-            
-            # Add results to conversation history (for both "exploring" and "complete" status)
-            # This function appends assistant response and execution result to the conversation history
-            self._update_conversation_with_results(llm_call_number, response, execution_result, messages)
-            
-            # Check if task is complete (status="complete" means agent finished)
-            if response["status"] == "complete":
-                logger.info("\nTask COMPLETE (status=complete)\n")
-                # Create proper result dictionary with reasoning as output
-                final_result = {
-                    "success": True,
-                    "output": response.get("reasoning", ""),
-                    "error": None
-                }
-                break
+            return {"success": True, 
+                    "code": passed_code,
+                    "execution_result": execution_result,
+                    "final_reasoning": post_execution_judge_result["reasoning"]}
+        
+
+        
+            # TODO 2: We have to add [HERE] LLM as a judge to make a POST_EXECUTION code analysis. Execution Results.
+       
+
             
     async def run_multi_turn_code_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
         """
@@ -183,7 +193,8 @@ class RealMCPOrchestrator:
         logger.info(f"\n\n{'=' * 80}\nUSER QUERY: {user_query}\n{'=' * 80}\n")
         
         # Initialize conversation with user query
-        messages = [{"role": "user", "content": user_query}]
+        user_message = {"role": "user", "content": user_query}
+        messages = [user_message]
         
         # Initialize variables for tracking results and metrics
         final_result = None
@@ -193,10 +204,71 @@ class RealMCPOrchestrator:
         
         # Multi-turn loop: iterate up to max_turns times
         for llm_call_number in range(1, max_turns + 1):
-            run_multi_turn_judge_async(llm_call_number, messages)
+            # Start timer for this turn
+            turn_start = time.time()
+            
+            # Get LLM response with generated code
+            response = await self._get_llm_response(llm_call_number, messages)
+
+            # Handle case where code generation fails
+            if response is None:
+                return {"success": False, "output": "", "error": "Code generation failed"}
         
-        
-        
+            # Check if task is complete (status="complete" means agent finished)
+            if response["status"] == "complete":
+                logger.info("\nTask COMPLETE (status=complete)\n")
+                # Create proper result dictionary with reasoning as output
+                final_result = {
+                    "success": True,
+                    "output": response.get("reasoning", ""),
+                    "error": None
+                }
+                break
+            
+            # Final turn check:
+            # Check if code is empty (status="complete" with empty code means final answer in reasoning)
+            code = response.get("code", "").strip()
+            is_complete_with_empty_code = response["status"] == "complete" and (not code or code == "")
+            
+            # Execute the generated code only if it's not empty.
+            if is_complete_with_empty_code:
+                # No code to execute, use empty execution result
+                execution_result = {
+                    "success": True,
+                    "output": "",
+                    "error": None
+                }
+                logger.info(f"\n{'=' * 80}\nSKIPPING CODE EXECUTION (status=complete, empty code)\n{'=' * 80}")
+                logger.info("Final answer will be taken from reasoning field")
+                break
+            
+            else:
+                # Refactor point
+                judge_result = await self.run_multi_turn_judge_async(user_message, response, llm_call_number, max_turns)
+                execution_result = judge_result["execution_result"]
+                response["code"] = judge_result["code"]
+
+            # Track execution output for final summarization
+            if execution_result.get("output"):
+                execution_results.append(execution_result["output"])
+            elif execution_result.get("error"):
+                logger.warning(f"Execution failed in LLM call {llm_call_number}, but continuing...\n")
+                execution_results.append(execution_result["error"])
+
+            # Calculate turn execution time
+            turn_time = time.time() - turn_start
+            turn_times.append(turn_time)
+            
+            # Store token usage for this turn
+            token_usage_list.append(response.get("token_usage", {}))
+            
+            # Log turn completion
+            logger.info(f"\n{'=' * 80}\nLLM CALL {llm_call_number} COMPLETED in {turn_time:.2f}s\n{'=' * 80}")
+            
+            # Add results to conversation history (for both "exploring" and "complete" status)
+            # This function appends assistant response and execution result to the conversation history
+            self._update_conversation_with_results(llm_call_number, response, execution_result, messages)  
+
         # Handle case where max turns reached without completion
         if final_result is None:
             logger.warning(f"\nMax turns ({max_turns}) reached")
@@ -263,7 +335,7 @@ class RealMCPOrchestrator:
         # Return LLM response containing status, code, reasoning, and tokens
         return response
     
-    # Using docker_executor
+    # Using docker_executor ( Deprecated )
     async def _run_generated_code_and_log(self, llm_call_number: int, response: Dict) -> Dict:
         """
         Execute generated code in sandbox and log results.
