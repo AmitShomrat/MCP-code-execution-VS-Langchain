@@ -96,73 +96,114 @@ class RealMCPOrchestrator:
                     'success': bool,
                     'code': str,
                     'execution_result': str,
-                    'final_reasoning': str  
+                    'final_reasoning': str, 
+                    'judge_token_usage_list': List[Dict[str, int]],
+                    'code_generation_token_usage_list': List[Dict[str, int]]
         """
         logger.info(f"Running multi turn judge asyn for turn {llm_call_number}, with response: {response} and user message: {user_message}")
 
+        # List object for pre execution judge messages:
+        # { role: 'developer', 'code': 'code_generated_by_developer' }
+        # List object for pre execution code messages:
+        # { role: 'judge_assistant', 'last_code': 'code_generated_by_code_generation_assistant', 'code_failures': 'reasoning_on_code_failures' }
+        
         # PRE_EXECUTION Variables initialization:
-        # Initial code that generated with outer loop history.
         pre_execution_judge_messages = [{'role': 'assistant', 'content': response["code"]}]
         pre_execution_code_messages = []
         
+
+        # List of objects for post execution judge messages:
+        # { role: user, content: user_query }
+        # { role: 'user', 'current_stage_reasoning': 'reasoning_on_current_stage' }
+        # { role: 'system', 'execution_result': 'execution_result_of_current_stage' }
+
         # POST_EXECUTION Variables initialization:
         post_execution_judge_messages = [user_message]
         
+        judge_token_usage_list = []
+        code_generation_token_usage_list = []
+
         for judge_iteration in range(1, max_turns + 1):
+            logger.info(f"Running multi turn judge asyn for turn {judge_iteration}, with pre execution judge messages: {pre_execution_judge_messages}")
             try:
                 # LLM as a judge to make a PRE_EXECUTION code analysis. pass code & reasoning.
                 pre_execution_judge_response = await self.judge.judge_code_and_execution_results(pre_execution_judge_messages)
+                judge_token_usage_list.append(pre_execution_judge_response["token_usage"])
             except Exception as e:
                 logger.error(f"Error in multi turn judge: in pre execution judge result: {e}")
                 return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
             
             if not pre_execution_judge_response['status']:
-                pre_execution_code_messages.extend([{'role': 'assistant', 'content': pre_execution_judge_response["reasoning"]}])
+                pre_execution_code_messages.extend([{'role': 'assistant', 
+                                                    'content': json.dumps(
+                                                    {   
+                                                        'last_code': pre_execution_judge_messages[-1].get('code', ''),
+                                                        'code_failures': pre_execution_judge_response["reasoning"]
+                                                    }, indent=2)
+                                                    } ] )
                 try:
                     code_generation_response = await self.agent.generate_code_with_history(pre_execution_code_messages)
+                    code_generation_token_usage_list.append(code_generation_response["token_usage"])
                 except Exception as e:
                     logger.error(f"Error in multi turn judge: code generation response: {e}")
                     return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
-                pre_execution_judge_messages.extend([{'role': 'assistant', 'content': code_generation_response["code"]}])
+                
+                pre_execution_judge_messages.extend([{'role': 'assistant',
+                                                      'content': code_generation_response["code"]}])
                 continue
             
             passed_code = pre_execution_judge_messages[-1].get("content", '')
 
-            # TODO: Stoped here, tommorrow we need to complete the execution part. ( user_query with execution_result to the judge)
-            # We need to decide what happans if the execution result wasn't passed.
 
+            # Pre execution success, Execute the code.
             execution_result = await self._docker_executor.execute_async(passed_code)
-            # Execution result among with user message.
-            post_execution_judge_messages.extend([{'role': 'system', 'content': execution_result.get('output', '')}])
-            post_execution_judge_result = await self.judge.judge_code_and_execution_results(post_execution_judge_messages)
+            
+            # Execution result among with original user query.
+            post_execution_judge_messages.extend([{'role': 'user',
+                                                   'content': pre_execution_judge_response.get('reasoning', '')},
+                                                  {'role': 'system',
+                                                   'content': [execution_result]}])
+            try:
+                post_execution_judge_response = await self.judge.judge_code_and_execution_results(post_execution_judge_messages)
+            except Exception as e:
+                logger.error(f"Error in multi turn judge: post execution judge result: {e}")
+                return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
+            
+            judge_token_usage_list.append(post_execution_judge_response["token_usage"])
 
             # If the execution result wasn't passed, we need to generate a new code.
-            if not post_execution_judge_result["status"]:
+            if not post_execution_judge_response["status"]:
                 if judge_iteration == max_turns:
                     return {"success": False,
-                            "code": pre_execution_judge_messages[-1].get("content", ""),
+                            "code": passed_code,
                             "execution_result": execution_result,
-                            "final_reasoning": post_execution_judge_result["reasoning"]} # Provide why the judge failed.
+                            "final_reasoning": post_execution_judge_response["reasoning"], # Provide why the judge failed.
+                            "tokens": self._calculate_total_tokens(judge_token_usage_list + code_generation_token_usage_list) }
                 else:
-                    pre_execution_code_messages.extend([{'role': 'assistant', 'content': post_execution_judge_result["reasoning"]}])
+                    pre_execution_code_messages.extend([{'role': 'assistant', 'content': post_execution_judge_response["reasoning"]}])
+                    
                     try:
+                        # Generating code for next iteration, instead of the respone code.
                         code_generation_response = await self.agent.generate_code_with_history(pre_execution_code_messages)
+                        code_generation_token_usage_list.append(code_generation_response["token_usage"])
                     except Exception as e:
                         logger.error(f"Error in multi turn judge: code generation response: {e}")
-                        return {"success": False, "code": "", "execution_result": "", "final_reasoning": ""}
+                        return {"success": False,
+                                "code": passed_code,
+                                "execution_result": execution_result,
+                                "final_reasoning": post_execution_judge_response["reasoning"],
+                                "tokens": self._calculate_total_tokens(judge_token_usage_list + code_generation_token_usage_list) }
+
+
                     pre_execution_judge_messages.extend([{'role': 'assistant', 'content': code_generation_response["code"]}])
                     continue
             
             return {"success": True, 
                     "code": passed_code,
                     "execution_result": execution_result,
-                    "final_reasoning": post_execution_judge_result["reasoning"]}
-        
-
-        
-            # TODO 2: We have to add [HERE] LLM as a judge to make a POST_EXECUTION code analysis. Execution Results.
-       
-
+                    "final_reasoning": post_execution_judge_response["reasoning"],
+                    "tokens": self._calculate_total_tokens(judge_token_usage_list + code_generation_token_usage_list) }
+    
             
     async def run_multi_turn_code_async(self, user_query: str, max_turns: int = 3) -> Dict[str, Any]:
         """
@@ -199,17 +240,18 @@ class RealMCPOrchestrator:
         # Initialize variables for tracking results and metrics
         final_result = None
         turn_times = []
-        token_usage_list = []
+        total_token_usage_list = []
         execution_results = []  # Track all execution outputs for final summarization
         
         # Multi-turn loop: iterate up to max_turns times
         for llm_call_number in range(1, max_turns + 1):
+            turn_token_usage_list = []
             # Start timer for this turn
             turn_start = time.time()
             
             # Get LLM response with generated code
             response = await self._get_llm_response(llm_call_number, messages)
-
+            turn_token_usage_list.append(response.get("token_usage", {}))
             # Handle case where code generation fails
             if response is None:
                 return {"success": False, "output": "", "error": "Code generation failed"}
@@ -244,9 +286,11 @@ class RealMCPOrchestrator:
             
             else:
                 # Refactor point
-                judge_result = await self.run_multi_turn_judge_async(user_message, response, llm_call_number, max_turns)
+                judge_result = await self.run_multi_turn_judge_async(user_message, response, llm_call_number, max_turns=3)
                 execution_result = judge_result["execution_result"]
                 response["code"] = judge_result["code"]
+                turn_token_usage_list.append(judge_result["tokens"])
+                
 
             # Track execution output for final summarization
             if execution_result.get("output"):
@@ -259,8 +303,11 @@ class RealMCPOrchestrator:
             turn_time = time.time() - turn_start
             turn_times.append(turn_time)
             
+            # Sum of both initial llm_response and judge tokens.
+            turn_tokens = self._calculate_total_tokens(turn_token_usage_list)
+            
             # Store token usage for this turn
-            token_usage_list.append(response.get("token_usage", {}))
+            total_token_usage_list.append(turn_tokens)
             
             # Log turn completion
             logger.info(f"\n{'=' * 80}\nLLM CALL {llm_call_number} COMPLETED in {turn_time:.2f}s\n{'=' * 80}")
@@ -291,7 +338,7 @@ class RealMCPOrchestrator:
                 "error": None
             }
         
-        ResultLogger.display_final_results(final_result, turn_times, total_time, token_usage_list)
+        ResultLogger.display_final_results(final_result, turn_times, total_time, total_token_usage_list)
         
         # Return formatted result dictionary
         return {
@@ -300,10 +347,10 @@ class RealMCPOrchestrator:
             "raw_output": execution_results[-1] if execution_results else final_result.get("output", ""),  # Last execution output for reference
             "error": final_result.get("error"),
             "time": total_time,
-            "llm_calls": self._format_llm_calls(turn_times, token_usage_list),
-            "tokens": self._calculate_total_tokens(token_usage_list),
+            "llm_calls": self._format_llm_calls(turn_times, total_token_usage_list),
+            "tokens": self._calculate_total_tokens(total_token_usage_list),
             "conversation_history": messages,
-            "turn_details": self._format_turn_details(messages, turn_times, token_usage_list)
+            "turn_details": self._format_turn_details(messages, turn_times, total_token_usage_list)
         }
     
     # Using agent's generated code.

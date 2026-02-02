@@ -1,6 +1,6 @@
 [
   {"task_id": "task_1",
-    "user_query": "Retrive all users that has access to door 'C'.",
+    "user_query": "Retrieve all users that has access to door 'C'.",
     "expected_behaviour": "Agent use inspect_db to inspect the database schema and then use query_db to retrieve all users that has access to door 'C'.",
     "expected_output": "All users that has access to door 'C'"
   },

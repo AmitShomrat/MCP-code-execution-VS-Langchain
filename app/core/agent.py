@@ -104,7 +104,7 @@ class OpenAICodeAgent(Agent):
         # Build messages array with system prompt and conversation history
         openai_messages = [{"role": "system", "content": CODE_AGENT_PROMPT}] # The CODE_AGENT_PROMPT used while Maintenance a messeges list
         openai_messages.extend(messages)
-        logger.info(f"\n\nOpenAI Messages:\n\n{json.dumps(openai_messages, indent=2)}\n")
+        logger.info(f"\n\nOpenAI Code Messages:\n\n{json.dumps(openai_messages, indent=2)}\n")
         
 
         # Read openAI docs Response and try to bind and provide the tools def's for the agent.
