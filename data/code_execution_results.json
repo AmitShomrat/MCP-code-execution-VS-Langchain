@@ -644,5 +644,75 @@
         "total_tokens": 3612
       }
     }
+  },
+  {
+    "timestamp": "2025-12-21T19:40:08.363458",
+    "query": "Calculate total revenue in Sales_Records.csv",
+    "result": {
+      "success": true,
+      "output": "Error: The filesystem server is not connected. Please check the server status.\n",
+      "error": null,
+      "time": 6.841808795928955,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 5.12,
+          "tokens": {
+            "prompt_tokens": 1152,
+            "completion_tokens": 150,
+            "total_tokens": 1302
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 1.72,
+          "tokens": {
+            "prompt_tokens": 1323,
+            "completion_tokens": 71,
+            "total_tokens": 1394
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 2475,
+        "completion_tokens": 221,
+        "total_tokens": 2696
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-21T19:41:01.063031",
+    "query": "Calculate total revenue in Sales_Records.csv",
+    "result": {
+      "success": true,
+      "output": "Total Revenue: $137,348,768.31\n",
+      "error": null,
+      "time": 10.182621955871582,
+      "llm_calls": [
+        {
+          "call_number": 1,
+          "latency": 4.53,
+          "tokens": {
+            "prompt_tokens": 1152,
+            "completion_tokens": 179,
+            "total_tokens": 1331
+          }
+        },
+        {
+          "call_number": 2,
+          "latency": 5.65,
+          "tokens": {
+            "prompt_tokens": 2074,
+            "completion_tokens": 233,
+            "total_tokens": 2307
+          }
+        }
+      ],
+      "tokens": {
+        "prompt_tokens": 3226,
+        "completion_tokens": 412,
+        "total_tokens": 3638
+      }
+    }
   }
 ]
