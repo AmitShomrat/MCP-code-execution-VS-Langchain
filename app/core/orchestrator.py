@@ -125,15 +125,17 @@ class RealMCPOrchestrator:
             # Get LLM response with generated code
             response = await self._get_llm_response(llm_call_number, messages)
             
+
             # Handle case where code generation fails
             if response is None:
                 return {"success": False, "output": "", "error": "Code generation failed"}
-            
+
+            # Final turn check:
             # Check if code is empty (status="complete" with empty code means final answer in reasoning)
             code = response.get("code", "").strip()
             is_complete_with_empty_code = response["status"] == "complete" and (not code or code == "")
             
-            # Execute the generated code only if it's not empty
+            # Execute the generated code only if it's not empty.
             if is_complete_with_empty_code:
                 # No code to execute, use empty execution result
                 execution_result = {
@@ -144,9 +146,14 @@ class RealMCPOrchestrator:
                 logger.info(f"\n{'=' * 80}\nSKIPPING CODE EXECUTION (status=complete, empty code)\n{'=' * 80}")
                 logger.info("Final answer will be taken from reasoning field")
             else:
+                # TODO 1: We have to add [HERE] LLM as a judge to make a PRE_EXECUTION code analysis. pass code & reasoning.
+
                 # Execute the generated code and log results
                 execution_result = await self._run_generated_code_and_log(llm_call_number, response)
             
+                # TODO 2: We have to add [HERE] LLM as a judge to make a POST_EXECUTION code analysis. Execution Results.
+            
+
             # Track execution output for final summarization
             if execution_result.get("output"):
                 execution_results.append(execution_result["output"])
@@ -218,6 +225,7 @@ class RealMCPOrchestrator:
             "turn_details": self._format_turn_details(messages, turn_times, token_usage_list)
         }
     
+    # Using agent's generated code.
     async def _get_llm_response(self, llm_call_number: int, messages: list) -> Dict[str, str]:
         """
         Get code generation response from LLM with conversation history.
@@ -246,6 +254,7 @@ class RealMCPOrchestrator:
         # Return LLM response containing status, code, reasoning, and tokens
         return response
     
+    # Using docker_executor
     async def _run_generated_code_and_log(self, llm_call_number: int, response: Dict) -> Dict:
         """
         Execute generated code in sandbox and log results.
