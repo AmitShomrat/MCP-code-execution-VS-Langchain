@@ -153,7 +153,12 @@ class DockerCodeExecutor:
         logger.info(f"Persistent container stopped: {self.image}")
     
     async def execute_async(self, code: str) -> Dict[str, Any]:
-        """Execute code in persistent container"""
+        """Execute code in persistent container
+        Args:
+            code: str - The code to execute
+        Returns:
+            Dict[str, Any] - The result of the execution { success: bool, output: str, error: str, return_code: int }
+        """
         logger.info("=" * 80)
         logger.info("PERSISTENT DOCKER EXECUTOR - execute_async called")
         logger.info(f"Code length: {len(code)} bytes")
