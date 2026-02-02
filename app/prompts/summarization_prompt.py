@@ -1,7 +1,7 @@
 """
 Summarization prompt for generating clean final answers from code execution results.
 """
-
+# Deprecated: used by generate_final_answer method which is not in use.
 SUMMARIZATION_PROMPT = """
 You are an expert assistant that analyzes code execution results and provides clean, well-formatted answers to user queries.
 

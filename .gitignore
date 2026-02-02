@@ -16,3 +16,4 @@ NOTES.md
 README.bak
 Sales_Records.csv
 .venv/
+.pytest_cache/

@@ -1,7 +1,7 @@
 import os, sys
 from typing import Any, Dict, Optional, List
 import asyncio
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from mcp.types import CallToolResult, TextContent
@@ -61,25 +61,6 @@ async def tools():
                 "inputSchema": schema or {},
             })
     return {"tools": out}
-
-# @app.post("/mcp/call", response_model=CallResp)
-# async def call_tool(req: CallReq):
-#     if "." not in req.name:
-#         raise HTTPException(status_code=400, detail="name must be '<server>.<tool>'")
-
-#     server, tool = req.name.split(".", 1)
-
-#     async def _call():
-#         return await _mcp_client.call_tool(server_name=server, tool_name=tool, arguments=req.args)
-
-#     try:
-#         result = await asyncio.wait_for(_call(), timeout=req.timeout_s)
-#         return CallResp(ok=True, result=None, content_text=extract_text(result))
-#     except asyncio.TimeoutError:
-#         return CallResp(ok=False, error=f"timeout after {req.timeout_s}s")
-#     except Exception as e:
-#         return CallResp(ok=False, error=str(e))
-
 
 
 @app.post("/mcp/call", response_model=CallToolResult)

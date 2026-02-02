@@ -126,7 +126,7 @@ class OpenAICodeAgent(Agent):
         return result
 
 
-    # Deprecated: This method is not used anymore.
+    # Deprecated: Method not in use.
     async def generate_final_answer(
         self,
         user_query: str,

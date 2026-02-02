@@ -19,12 +19,12 @@ class DockerCodeExecutor:
         image: str = DOCKER_IMAGE_NAME,
         gateway_url: str = DOCKER_MCP_GATEWAY,
         timeout_s: int = CODE_EXECUTION_TIMEOUT
-        # max_idle_time: int = 300,  # Kill container after 5 min idle
+        
     ):
         self.image = image
         self.gateway_url = gateway_url
         self.timeout_s = timeout_s
-        # self.max_idle_time = max_idle_time
+    
         
         # Container state
         self.process: Optional[asyncio.subprocess.Process] = None

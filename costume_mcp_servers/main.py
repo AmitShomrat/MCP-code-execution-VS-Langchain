@@ -11,17 +11,6 @@ from costume_mcp_servers.server_factory import create_server
 server_choice = os.getenv('SERVER_CHOICE', 'I_1')
 mcp, SERVER_GUIDE = create_server(server_choice)
 
-# mcp, SERVER_GUIDE = create_server("I_1")
-
-# mcp, SERVER_GUIDE = create_server("II_1")
-
-# mcp, SERVER_GUIDE = create_server("II_2")
-
-# mcp, SERVER_GUIDE = create_server("III_1")
-
-# mcp, SERVER_GUIDE = create_server("III_2")
-
-# mcp, SERVER_GUIDE = create_server("IV_1")
 
 if __name__ == "__main__":
     mcp.run()

@@ -1,4 +1,3 @@
-# app/langchain/mcp_dynamic_tool.py
 from typing import Any, Dict
 from langchain.tools import tool
 from pydantic import BaseModel, Field
