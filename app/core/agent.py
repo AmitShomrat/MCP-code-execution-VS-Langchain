@@ -9,6 +9,7 @@ from openai import OpenAI
 
 from app.app_logging.logger import setup_logger
 from app.prompts import CODE_AGENT_PROMPT, SUMMARIZATION_PROMPT, JUDGE_AGENT_PROMPT
+from .verdicts import verdict_enums
 from app.config import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
@@ -200,9 +201,12 @@ class OpenAICodeAgent(Agent):
             "token_usage": token_usage
         }
 
-
 class OpenAIJudge(Agent):
     """Agent that judges the code and the execution results"""
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        super().__init__(api_key, model)
+        # Agent use enum for verdicts if status is False.
+        self.verdict_enums = verdict_enums
 
     async def judge_code_and_execution_results(
         self,
@@ -222,10 +226,14 @@ class OpenAIJudge(Agent):
             raise e
         
         # Validate required fields are present
-        if "status" not in judge_result or "reasoning" not in judge_result:
+        if "status" not in judge_result or "reasoning" not in judge_result or "verdict" not in judge_result:
             raise ValueError(f"Invalid LLM response format: {judge_result}")       
+        
         if judge_result['status'] not in [True, False]:
             raise ValueError(f"Invalid status value: {judge_result['status']}")
+        
+        if judge_result['verdict'] not in self.verdict_enums:
+            raise ValueError(f"Invalid verdict value: {judge_result['verdict']}")
         
         # Format real boolean value
         return judge_result

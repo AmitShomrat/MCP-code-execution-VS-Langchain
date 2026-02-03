@@ -89,7 +89,7 @@ class BenchmarkRunner:
         if "code_execution" in approaches:
             logger.info(f"Running Code Execution MCP approach... (use_judge: {use_judge})")
             code_exec_result = await self.code_execution_benchmark.run_benchmark_async(
-                query=user_query,
+                task=task,
                 max_turns=max_turns,
                 use_judge=use_judge
             )

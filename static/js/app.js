@@ -1585,11 +1585,16 @@ function displayDetailedResults(results) {
                                             const statusIcon = judgeTurn.status === 'success' ? '✅' : 
                                                               judgeTurn.status === 'pre_execution_failed' ? '⚠️' :
                                                               judgeTurn.status === 'post_execution_failed' ? '❌' : '⏳';
+                                            const turnVerdict = (judgeTurn.post_execution && judgeTurn.post_execution.verdict) || (judgeTurn.pre_execution && judgeTurn.pre_execution.verdict);
+                                            const preVerdict = judgeTurn.pre_execution && judgeTurn.pre_execution.verdict;
+                                            const postVerdict = judgeTurn.post_execution && judgeTurn.post_execution.verdict;
+                                            const verdictClass = (v) => v ? 'verdict-' + String(v).toLowerCase().replace(/_/g, '-') : '';
                                             return `
                                                 <div class="judge-turn-item">
                                                     <div class="judge-turn-header">
                                                         <span class="judge-turn-number">Iteration ${judgeTurn.iteration}</span>
                                                         <span class="judge-turn-status ${judgeTurn.status}">${statusIcon} ${judgeTurn.status}</span>
+                                                        <span class="judge-verdict-badge ${verdictClass(turnVerdict)}">Judge: ${escapeHtml(turnVerdict || '—')}</span>
                                                         ${judgeTurn.turn_time ? `<span class="judge-turn-time">${judgeTurn.turn_time.toFixed(2)}s</span>` : ''}
                                                     </div>
                                                     <div class="judge-turn-details">
@@ -1600,6 +1605,7 @@ function displayDetailedResults(results) {
                                                                 <span class="judge-status-badge ${judgeTurn.pre_execution.status ? 'passed' : 'failed'}">
                                                                     ${judgeTurn.pre_execution.status ? '✓ Passed' : '✗ Failed'}
                                                                 </span>
+                                                                <div class="judge-verdict-line"><strong>Verdict:</strong> <span class="judge-verdict ${verdictClass(preVerdict)}">${escapeHtml(preVerdict || '—')}</span></div>
                                                                 <div class="judge-reasoning">${escapeHtml(judgeTurn.pre_execution.reasoning || '')}</div>
                                                                 ${judgeTurn.pre_execution.tokens ? `
                                                                 <div class="judge-tokens">Tokens: ${judgeTurn.pre_execution.tokens.total_tokens || 0}</div>
@@ -1655,6 +1661,7 @@ function displayDetailedResults(results) {
                                                                 <span class="judge-status-badge ${judgeTurn.post_execution.status ? 'passed' : 'failed'}">
                                                                     ${judgeTurn.post_execution.status ? '✓ Passed' : '✗ Failed'}
                                                                 </span>
+                                                                <div class="judge-verdict-line"><strong>Verdict:</strong> <span class="judge-verdict ${verdictClass(postVerdict)}">${escapeHtml(postVerdict || '—')}</span></div>
                                                                 <div class="judge-reasoning">${escapeHtml(judgeTurn.post_execution.reasoning || '')}</div>
                                                                 ${judgeTurn.post_execution.tokens ? `
                                                                 <div class="judge-tokens">Tokens: ${judgeTurn.post_execution.tokens.total_tokens || 0}</div>
@@ -1689,11 +1696,16 @@ function displayDetailedResults(results) {
                                             const statusIcon = judgeTurn.status === 'success' ? '✅' : 
                                                               judgeTurn.status === 'pre_execution_failed' ? '⚠️' :
                                                               judgeTurn.status === 'post_execution_failed' ? '❌' : '⏳';
+                                            const turnVerdict = (judgeTurn.post_execution && judgeTurn.post_execution.verdict) || (judgeTurn.pre_execution && judgeTurn.pre_execution.verdict);
+                                            const preVerdict = judgeTurn.pre_execution && judgeTurn.pre_execution.verdict;
+                                            const postVerdict = judgeTurn.post_execution && judgeTurn.post_execution.verdict;
+                                            const verdictClass = (v) => v ? 'verdict-' + String(v).toLowerCase().replace(/_/g, '-') : '';
                                             return `
                                                 <div class="judge-turn-item">
                                                     <div class="judge-turn-header">
                                                         <span class="judge-turn-number">Iteration ${judgeTurn.iteration}</span>
                                                         <span class="judge-turn-status ${judgeTurn.status}">${statusIcon} ${judgeTurn.status}</span>
+                                                        <span class="judge-verdict-badge ${verdictClass(turnVerdict)}">Judge: ${escapeHtml(turnVerdict || '—')}</span>
                                                         ${judgeTurn.turn_time ? `<span class="judge-turn-time">${judgeTurn.turn_time.toFixed(2)}s</span>` : ''}
                                                     </div>
                                                     <div class="judge-turn-details">
@@ -1704,6 +1716,7 @@ function displayDetailedResults(results) {
                                                                 <span class="judge-status-badge ${judgeTurn.pre_execution.status ? 'passed' : 'failed'}">
                                                                     ${judgeTurn.pre_execution.status ? '✓ Passed' : '✗ Failed'}
                                                                 </span>
+                                                                <div class="judge-verdict-line"><strong>Verdict:</strong> <span class="judge-verdict ${verdictClass(preVerdict)}">${escapeHtml(preVerdict || '—')}</span></div>
                                                                 <div class="judge-reasoning">${escapeHtml(judgeTurn.pre_execution.reasoning || '')}</div>
                                                                 ${judgeTurn.pre_execution.tokens ? `
                                                                 <div class="judge-tokens">Tokens: ${judgeTurn.pre_execution.tokens.total_tokens || 0}</div>
@@ -1759,6 +1772,7 @@ function displayDetailedResults(results) {
                                                                 <span class="judge-status-badge ${judgeTurn.post_execution.status ? 'passed' : 'failed'}">
                                                                     ${judgeTurn.post_execution.status ? '✓ Passed' : '✗ Failed'}
                                                                 </span>
+                                                                <div class="judge-verdict-line"><strong>Verdict:</strong> <span class="judge-verdict ${verdictClass(postVerdict)}">${escapeHtml(postVerdict || '—')}</span></div>
                                                                 <div class="judge-reasoning">${escapeHtml(judgeTurn.post_execution.reasoning || '')}</div>
                                                                 ${judgeTurn.post_execution.tokens ? `
                                                                 <div class="judge-tokens">Tokens: ${judgeTurn.post_execution.tokens.total_tokens || 0}</div>

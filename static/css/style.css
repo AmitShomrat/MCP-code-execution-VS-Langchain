@@ -2081,6 +2081,34 @@ tbody tr:hover {
     color: var(--traditional-color);
 }
 
+/* Judge verdict badges (turn-level and phase-level) */
+.judge-verdict-badge,
+.judge-verdict {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 8px;
+    background: rgba(233, 69, 96, 0.2);
+    color: var(--traditional-color);
+}
+
+.judge-verdict-badge.verdict-safe,
+.judge-verdict.verdict-safe {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--code-exec-color);
+}
+
+.judge-verdict-line {
+    margin: 6px 0;
+    font-size: 0.9rem;
+}
+
+.judge-verdict-line .judge-verdict {
+    margin-left: 4px;
+}
+
 .judge-reasoning,
 .code-reasoning {
     color: var(--text-secondary);

@@ -83,9 +83,137 @@ class RealMCPOrchestrator:
         logger.info("INITIALIZATION COMPLETE")
         logger.info("=" * 80 + "\n\n")
 
+    async def run_pre_execution_judge_async(self, task: Dict[str, Any], response: Dict[str, Any], llm_call_number: int, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any] | str:
+        """
+        Run pre-execution judge async.
+        Args:
+            task: Task dictionary containing user query and other task details.
+                - task_id: Task identifier string.
+                - user_query: User query string.
+                - expected_behaviour: Expected behaviour string.
+                - expected_output: Expected output string.
+            response: Response dictionary containing code agent response.
+                - status: Status string.
+                - code: Generated code string.
+                - reasoning: Reasoning string.
+            llm_call_number: Current LLM call number.
+            conversation_history: List of conversation history messages.
+            max_turns: Maximum number of turns to prevent infinite loops.
+        Returns:
+            Dictionary containing pre-execution judge results.
+                - status: Judge status string.
+                - verdict: Judge verdict string.
+                - reasoning: Judge reasoning string.
+                - tokens: Judge token usage dictionary.
+            Error: str    
+        """
+        # Build Context for Judge.
+        # Conversation history include the user query at this phase.
+        assistant_message = {
+            'role': 'assistant',
+            'content': json.dumps(response, indent=2)
+            }
+        
+        # Can be used for tunings, in real world there are no baselines expectations.
+        system_message = None
+        # system_message = {
+        #     'role': 'system',
+        #     'content': {k: v for k,v in task.items() if k == 'expected_behaviour' or k == 'expected_output'}
+        #     }
+
+        
+        complete_context = conversation_history.copy()
+        complete_context.append(assistant_message)
+        start_time = time.time()
+        try:
+            pre_execution_judge_response = await self.judge.judge_code_and_execution_results(complete_context)
+            
+            return {
+                "status": pre_execution_judge_response["status"],
+                "verdict": pre_execution_judge_response["verdict"],
+                "reasoning": pre_execution_judge_response["reasoning"],
+                "tokens": pre_execution_judge_response["token_usage"],
+                "time": time.time() - start_time,
+                "error": None
+            }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+
+    async def run_post_execution_judge_async(self, task: Dict[str, Any], execution_result: Dict[str, Any], response: Dict[str, Any], llm_call_number: int, conversation_history: List[Dict[str, Any]]) -> Dict[str, Any] | str:
+        """
+        Run post-execution judge async.
+        Args:
+            task: Task dictionary containing user query and other task details.
+                - task_id: Task identifier string.
+                - user_query: User query string.
+                - expected_behaviour: Expected behaviour string.
+                - expected_output: Expected output string.
+            response: Response dictionary containing code agent response.
+                - status: Status string.
+                - code: Generated code string.
+                - reasoning: Reasoning string.
+            execution_result: Execution result dictionary containing execution result.
+                - success: Execution success boolean.
+                - output: Execution output string.
+                - error: Execution error string.
+            llm_call_number: Current LLM call number.
+            conversation_history: List of conversation history messages.
+        Returns:
+            Dictionary containing post-execution judge results.
+                - status: Judge status string.
+                - verdict: Judge verdict string.
+                - reasoning: Judge reasoning string.
+                - tokens: Judge token usage dictionary.  
+            Error: str     
+        """
+        # Build Context for Judge.
+        # Conversation history include the user query at this phase.
+        assistant_code_agent_response_message = {
+            'role': 'assistant',
+            'content': json.dumps(response, indent=2)
+            }
+
+        assistant_execution_result_message = {
+            'role': 'assistant',
+            'content': json.dumps(execution_result, indent=2)
+            }
+        
+        # Can be used for tunings, in real world there are no baselines expectations.
+        system_message = None
+        # system_message = {
+        #     'role': 'system',
+        #     'content': {k: v for k,v in task.items() if k == 'expected_behaviour' or k == 'expected_output'}
+        #     }
+ 
+        complete_context = conversation_history.copy()
+        complete_context.append(assistant_code_agent_response_message)
+        complete_context.append(assistant_execution_result_message)
+        start_time = time.time()
+        try:
+            post_execution_judge_response = await self.judge.judge_code_and_execution_results(complete_context)
+            
+            return {
+                "status": post_execution_judge_response["status"],
+                "verdict": post_execution_judge_response["verdict"],
+                "reasoning": post_execution_judge_response["reasoning"],
+                "tokens": post_execution_judge_response["token_usage"],
+                "time": time.time() - start_time,
+                "error": None
+            }
+
+        except Exception as e:
+            return {"error": str(e)}
+        
+
     async def run_multi_turn_judge_async(self, user_message: Dict[str, Any], response: Dict[str, Any], llm_call_number: int, conversation_history: List[Dict[str, Any]], max_turns: int = 3) -> Dict[str, Any]:
-        f"""
-            run multi turn judge async used LLM as a judge to verify code generation safty and execution results compatibilty.
+        """
+        DEPRECATED: Use the inline judge flow in run_task_async (run_pre_execution_judge_async +
+        run_post_execution_judge_async per turn) instead. This method is kept for reference;
+        its functionality has been detached into the main task loop.
+
+        Run multi-turn judge async: LLM as judge to verify code safety and execution compatibility.
             Args:
                 response: The code agent response in the context of user conversation history. Dict[str,str]
                 user_message: original user query object. (List[Dict[str,str]])
@@ -143,7 +271,7 @@ class RealMCPOrchestrator:
         judge_token_usage_list = []
         code_generation_token_usage_list = []
         
-        # Track inner judge turns for trace display
+        # Track inner judge turns for trace display List[Dict[str, Any]]
         judge_turns = []
 
         for judge_iteration in range(1, max_turns + 1):
@@ -366,7 +494,7 @@ class RealMCPOrchestrator:
             "judge_turns": judge_turns
         }
 
-    async def run_multi_turn_code_async(self, user_query: str, max_turns: int = 3, use_judge: bool = False) -> Dict[str, Any]:
+    async def run_multi_turn_code_async(self, task: Dict[str, Any], max_turns: int = 3, use_judge: bool = False) -> Dict[str, Any]:
         """
         Run multi-turn conversation with status-based loop.
         
@@ -389,6 +517,7 @@ class RealMCPOrchestrator:
                 - conversation_history: Conversation history
                 - turn_details: Detailed turn information
         """
+        user_query = task.get("user_query")
         # Start timer for total execution time tracking
         total_start = time.time()
         
@@ -416,6 +545,7 @@ class RealMCPOrchestrator:
             # Get LLM response with generated code
             response = await self._get_llm_response(llm_call_number, messages)
             turn_token_usage_list.append(response.get("token_usage", {}))
+            
             # Handle case where code generation fails
             if response is None:
                 return {"success": False, "output": "", "error": "Code generation failed"}
@@ -448,28 +578,59 @@ class RealMCPOrchestrator:
                 logger.info("Final answer will be taken from reasoning field")
                 break
             
+            # Execute code - with or without judge based on use_judge flag
             else:
-                # Execute code - with or without judge based on use_judge flag
                 executed_turn_count += 1  # Increment executed turn count (this turn will add messages)
+                
                 if use_judge:
-                    # Use judge flow for safety checks
-                    judge_result = await self.run_multi_turn_judge_async(user_message, response, llm_call_number, messages, max_turns=3)
-                    execution_result = judge_result["execution_result"]
-                    response["code"] = judge_result["code"]
-                    turn_token_usage_list.append(judge_result["tokens"])
-                    # Store judge_turns for this turn using executed_turn_count (matches turn_number in turn_details)
-                    judge_turns_list = judge_result.get("judge_turns", [])
-                    turn_judge_turns[executed_turn_count] = judge_turns_list
-                    logger.info(f"Stored judge_turns for executed_turn_count {executed_turn_count} (llm_call_number {llm_call_number}): {len(judge_turns_list)} iterations")
+                    judge_turn_summaries = {
+                    "iteration": 1, # Inner turn iterations for judge.
+                    "pre_execution": {}, # Phase A
+                    "execution": None, # Phase B
+                    "post_execution": {}, # Phase C
+                    "status": "pending"
+                    }
+                    
+                    # Judge Flow: Pre-execution judge.
+                    pre_execution_judge_result = await self.run_pre_execution_judge_async(task, response, llm_call_number, messages)
+                    
+                    
+                    # [Based on Judge.verdict system decides next operations] -> Execution or code generation.
+                    execution_result = await self._docker_executor.execute_async(response["code"])
+                    
+                    judge_turn_summaries["execution"] = execution_result
+
+
+                    post_execution_judge_result = await self.run_post_execution_judge_async(task, execution_result, response, llm_call_number, messages)
+                    # [Based on post_execution_judge.verdict, the system decides next operations] -> re generation code, mark tools, etc...
+                  
+                    # Store Judge data for this turn. Verdict lives inside pre_execution and post_execution only.
+                    if not post_execution_judge_result["error"] and not pre_execution_judge_result["error"] and not execution_result["error"]:
+                        judge_turn_summaries["status"] = "success"
+                        judge_turn_summaries["turn_time"] = pre_execution_judge_result["time"] + post_execution_judge_result["time"]
+                        judge_turn_summaries["pre_execution"] = pre_execution_judge_result
+                        judge_turn_summaries["execution"] = execution_result
+                        judge_turn_summaries["post_execution"] = post_execution_judge_result
+                        turn_token_usage_list.extend([pre_execution_judge_result["tokens"], post_execution_judge_result["tokens"]])
+                    else:
+                        judge_turn_summaries["status"] = "error"
+                        judge_turn_summaries["error"] = post_execution_judge_result["error"] if post_execution_judge_result["error"] else pre_execution_judge_result["error"] if pre_execution_judge_result["error"] else execution_result["error"]
+                        judge_turn_summaries["pre_execution"] = pre_execution_judge_result
+                        judge_turn_summaries["post_execution"] = post_execution_judge_result
+                        
+
+
+                    # Success - all checks passed
+                    turn_judge_turns[executed_turn_count] = [judge_turn_summaries]
+
+                # Execute code directly without judge
                 else:
-                    # Execute code directly without judge
                     logger.info(f"\n{'=' * 80}\nEXECUTING CODE WITHOUT JUDGE (Call {llm_call_number})\n{'=' * 80}")
                     execution_result = await self._docker_executor.execute_async(response["code"])
                     logger.info(f"\nExecution Result:\n{'-' * 80}\n{execution_result.get('output', '')}\n{'-' * 80}")
                     if execution_result.get('error'):
                         logger.error(f"\nError: {execution_result['error']}")
                 
-
             # Track execution output for final summarization
             if execution_result.get("output"):
                 execution_results.append(execution_result["output"])
@@ -494,7 +655,7 @@ class RealMCPOrchestrator:
             # This function appends assistant response and execution result to the conversation history
             self._update_conversation_with_results(llm_call_number, response, execution_result, messages)  
 
-        # Handle case where max turns reached without completion
+        # Handle case where max turns reached without completion ( status hasn't reached 'complete' )
         if final_result is None:
             logger.warning(f"\nMax turns ({max_turns}) reached")
             # execution_result is already a dict, use it directly
