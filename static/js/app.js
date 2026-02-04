@@ -952,7 +952,7 @@ function loadTasksFromJSON(tasks) {
                 >${escapeHtml(userQuery)}</textarea>
                 ${expectedBehaviour || expectedOutput ? `
                 <details class="task-details">
-                    <summary>Expected Behaviour & Output</summary>
+                    <summary>Task Baselines</summary>
                     <div class="task-details-content">
                         ${expectedBehaviour ? `
                         <div class="task-detail-field">
@@ -1578,7 +1578,7 @@ function displayDetailedResults(results) {
                                 <details class="judge-turns-details">
                                     <summary class="judge-turns-summary">
                                         <span class="summary-arrow">▶</span>
-                                        <span class="judge-turns-label">🔍 LLM Judge Inner Turns (${turn.judge_turns.length})</span>
+                                        <span class="judge-turns-label">🔍 LLM Judge </span>
                                     </summary>
                                     <div class="judge-turns-content">
                                         ${turn.judge_turns.map((judgeTurn, jtIndex) => {
@@ -1689,7 +1689,7 @@ function displayDetailedResults(results) {
                                 <details class="judge-turns-details">
                                     <summary class="judge-turns-summary">
                                         <span class="summary-arrow">▶</span>
-                                        <span class="judge-turns-label">🔍 LLM Judge Inner Turns (${turn.judge_turns.length})</span>
+                                        <span class="judge-turns-label">🔍 LLM Judge Inner </span>
                                     </summary>
                                     <div class="judge-turns-content">
                                         ${turn.judge_turns.map((judgeTurn, jtIndex) => {
@@ -1847,7 +1847,7 @@ function displayDetailedResults(results) {
                     <span class="result-metric-value highlight-red">${result.comparison?.traditional_total_tokens || 0}</span>
                 </div>
                 <div class="result-metric" data-approach="code_execution">
-                    <span class="result-metric-label">⚡ Code Exec LLM Calls</span>
+                    <span class="result-metric-label">⚡ Code Exec Turns </span>
                     <span class="result-metric-value">${result.comparison?.code_exec_llm_calls || 0}</span>
                 </div>
                 <div class="result-metric" data-approach="traditional">
