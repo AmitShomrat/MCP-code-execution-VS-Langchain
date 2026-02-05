@@ -109,9 +109,10 @@ class RealMCPOrchestrator:
         """
         # Build Context for Judge.
         # Conversation history include the user query at this phase.
+        response_message = {k: v for k,v in response.items() if k != 'token_usage'}
         assistant_message = {
             'role': 'assistant',
-            'content': json.dumps(response, indent=2)
+            'content': json.dumps(response_message, indent=2)
             }
         
         # Can be used for tunings, in real world there are no baselines expectations.
@@ -126,7 +127,7 @@ class RealMCPOrchestrator:
         complete_context.append(assistant_message)
         start_time = time.time()
         try:
-            pre_execution_judge_response = await self.judge.judge_code_and_execution_results(complete_context)
+            pre_execution_judge_response = await self.judge.judge_code_and_execution_results(complete_context, mode="pre_execution")
             
             return {
                 "status": pre_execution_judge_response["status"],
@@ -168,11 +169,13 @@ class RealMCPOrchestrator:
                 - tokens: Judge token usage dictionary.  
             Error: str     
         """
+        # Filtering out the token usage, which isnt relevant for Judge.
+        response_message = {k: v for k,v in response.items() if k != 'token_usage'}
         # Build Context for Judge.
         # Conversation history include the user query at this phase.
         assistant_code_agent_response_message = {
             'role': 'assistant',
-            'content': json.dumps(response, indent=2)
+            'content': json.dumps(response_message, indent=2)
             }
 
         assistant_execution_result_message = {
@@ -192,7 +195,7 @@ class RealMCPOrchestrator:
         complete_context.append(assistant_execution_result_message)
         start_time = time.time()
         try:
-            post_execution_judge_response = await self.judge.judge_code_and_execution_results(complete_context)
+            post_execution_judge_response = await self.judge.judge_code_and_execution_results(complete_context, mode="post_execution")
             
             return {
                 "status": post_execution_judge_response["status"],

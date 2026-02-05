@@ -9,7 +9,7 @@ from openai import OpenAI
 
 from app.app_logging.logger import setup_logger
 from app.prompts import CODE_AGENT_PROMPT, SUMMARIZATION_PROMPT, JUDGE_AGENT_PROMPT
-from .verdicts import verdict_enums
+from .verdicts import pre_execution_verdict_enums, post_execution_verdict_enums
 from app.config import (
     OPENAI_API_KEY,
     OPENAI_MODEL,
@@ -127,94 +127,23 @@ class OpenAICodeAgent(Agent):
         return result
 
 
-    # Deprecated: Method not in use.
-    async def generate_final_answer(
-        self,
-        user_query: str,
-        execution_results: List[str],
-        conversation_history: List[Dict[str, str]]
-    ) -> Dict[str, Any]:
-        """
-        Generate a clean, well-formatted final answer from code execution results.
-        
-        This method analyzes all execution results and provides a final answer
-        that is clean, well-formatted, and directly addresses the user's query.
-        
-        Args:
-            user_query: The original user query
-            execution_results: List of execution output strings from all turns
-            conversation_history: Full conversation history for context
-            
-        Returns:
-            Dictionary with:
-                - answer: Clean, formatted final answer
-                - token_usage: Token usage information
-        """
-        # Compile all execution results into a single context
-        results_text = "\n\n---\n\n".join([
-            f"Execution Result {i+1}:\n{result}" 
-            for i, result in enumerate(execution_results)
-        ])
-        
-        # Create messages for summarization
-        messages = [
-            {
-                "role": "system",
-                "content": SUMMARIZATION_PROMPT
-            },
-            {
-                "role": "user",
-                "content": f"""Original User Query:\n {user_query} \n\n 
-                Code Execution Results:\n {results_text}
-                \n \nPlease provide a clean, well-formatted final answer to the user's query based on the execution results above."""
-            }
-        ]
-        
-        logger.info(f"\n\n{'=' * 80}\nFINAL ANSWER GENERATION\n{'=' * 80}\n")
-        logger.info(f"Generating final answer for query: {user_query}")
-        logger.info(f"Analyzing {len(execution_results)} execution results\n")
-        
-        # Call OpenAI API (no JSON mode - we want natural text)
-        response = None
-        try:
-            response = self.llm_call(messages)
-        except Exception as e:
-            logger.error(f"Error calling LLM: {e}")
-            raise e
-        
-        # Get the final answer
-        final_answer = response.choices[0].message.content
-        
-        # Extract token usage
-        token_usage = {
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens
-        }
-        
-        logger.info(f"\n{'=' * 80}\nFINAL ANSWER GENERATED\n{'=' * 80}\n")
-        logger.info(f"Answer length: {len(final_answer)} characters\n")
-        logger.info(f"Token usage: {token_usage['total_tokens']} tokens\n")
-        
-        return {
-            "answer": final_answer,
-            "token_usage": token_usage
-        }
-
 class OpenAIJudge(Agent):
     """Agent that judges the code and the execution results"""
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         super().__init__(api_key, model)
         # Agent use enum for verdicts if status is False.
-        self.verdict_enums = verdict_enums
+        self.pre_execution_verdict_enums = pre_execution_verdict_enums
+        self.post_execution_verdict_enums = post_execution_verdict_enums
 
     async def judge_code_and_execution_results(
         self,
-        messages: List[Dict[str, str]] # Format by the orchestrator.
+        messages: List[Dict[str, str]], # Format by the orchestrator.
+        mode: str = "pre_execution" # "pre_execution" or "post_execution"
     ) -> Dict[str, Any]:
         """
         Judge the code and the execution results
         """
+        verdict_enums = self.pre_execution_verdict_enums if mode == "pre_execution" else self.post_execution_verdict_enums
         openai_judge_messages = [ { "role": "system", "content": JUDGE_AGENT_PROMPT } ]
         openai_judge_messages.extend(messages)
         logger.info(f"\n\nOpenAI Judge Messages:\n\n{json.dumps(openai_judge_messages, indent=2)}\n")
@@ -232,7 +161,7 @@ class OpenAIJudge(Agent):
         if judge_result['status'] not in [True, False]:
             raise ValueError(f"Invalid status value: {judge_result['status']}")
         
-        if judge_result['verdict'] not in self.verdict_enums:
+        if judge_result['verdict'] not in verdict_enums:
             raise ValueError(f"Invalid verdict value: {judge_result['verdict']}")
         
         # Format real boolean value
