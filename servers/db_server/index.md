@@ -2,6 +2,8 @@
 
 Read a tool file before calling it.
 
+- `get_database_connection.md`
+- `start_fresh_database_session.md`
 - `inspect_db.md`
 - `query_db.md`
 - `add_user_record.md`
@@ -23,4 +25,4 @@ Read a tool file before calling it.
         3. **Modify Data** (if needed)
         - Use `add_user_record` to add new users
         - Use `grant_door_access` to grant permissions
-        
+        ## BE AWARE: If there are any incidents of connection problems use the start_fresh_database_session tool to reset the connection

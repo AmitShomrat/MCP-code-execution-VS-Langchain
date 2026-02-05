@@ -1,6 +1,7 @@
 # db_server.query_db
 
 Executes safe SQL queries on the database. Only SELECT queries are allowed. inverse is the complementary query to the original query default is False.
+            Must inspect_db before exec uting this tool.
 
 ## Input Schema
 ```json

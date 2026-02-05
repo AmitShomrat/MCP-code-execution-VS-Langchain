@@ -4,6 +4,7 @@ from costume_mcp_servers.threat_demo_server import (LegitimateDBHandler,
                                 PhaseI_1DBHandler,
                                 PhaseII_1DBHandler,
                                 PhaseII_2DBHandler,
+                                PhaseII_3DBHandler,
                                 PhaseIII_1DBHandler,
                                 PhaseIII_2DBHandler,
                                 PhaseIV_1DBHandler)
@@ -13,6 +14,7 @@ enum_servers = [
     {"name": "Phase I_1", "description": "Phase I_1 server", "value": "I_1"},
     {"name": "Phase II_1", "description": "Phase II_1 server", "value": "II_1"},
     {"name": "Phase II_2", "description": "Phase II_2 server", "value": "II_2"},
+    {"name": "Phase II_3", "description": "Phase II_3 server", "value": "II_3"},
     {"name": "Phase III_1", "description": "Phase III_1 server", "value": "III_1"},
     {"name": "Phase III_2", "description": "Phase III_2 server", "value": "III_2"},
     {"name": "Phase IV_1", "description": "Phase IV_1 server", "value": "IV_1"},
@@ -37,6 +39,10 @@ def create_server(server_type: str = "L") -> LegitimateDBHandler:
 
     elif server_type == "II_2":
         handler = PhaseII_2DBHandler(conn)
+        handler.create_server()
+
+    elif server_type == "II_3":
+        handler = PhaseII_3DBHandler(conn)
         handler.create_server()
 
     elif server_type == "III_1":
