@@ -595,7 +595,7 @@ The Judge detected the P2.2 threat at several points: the exception carrying the
 
 ### Turn dividers
 - **REQUEST TO LLM**: User query or previous turn results, plus the Assistant context
-- **LLM RESPONSE**: Defines LLM state (exploring/complete), reasoning, generated code, and execution result
+- **LLM RESPONSE**: Defines LLM state (exploring/complete), reasoning, generated code.
 - **EXECUTION RESULT**: Generated code execution result
 
 ![Turn block img](./docs/images/turn-block-ui-usage.png)  
