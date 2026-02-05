@@ -16,7 +16,7 @@ def server_selection():
 
     print("\nAvailable MCP servers:")
     for i, server in enumerate(enum_servers):
-        print(f"  {i + 1}. {server['name']} - {server['description']}")
+        print(f"  {i + 1}. {server['description']}")
     choice = input("Enter the number of the server you want to use: ").strip()
 
     if not choice.isdigit():

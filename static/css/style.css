@@ -1993,18 +1993,12 @@ tbody tr:hover {
     font-weight: 600;
 }
 
-.judge-turn-status.success {
+.judge-turn-status.passed {
     background: rgba(0, 255, 136, 0.2);
     color: var(--code-exec-color);
 }
 
-.judge-turn-status.pre_execution_failed,
-.judge-turn-status.post_execution_failed {
-    background: rgba(255, 166, 0, 0.2);
-    color: var(--warning-color);
-}
-
-.judge-turn-status.error {
+.judge-turn-status.failed {
     background: rgba(233, 69, 96, 0.2);
     color: var(--traditional-color);
 }
